@@ -30,7 +30,7 @@
             right: -2px; bottom: -2px;
             background: linear-gradient(90deg, #ff0000, #ffff00, #00ff00, #00ffff, #0000ff, #ff00ff, #ff0000);
             background-size: 400%;
-            border-radius: 0.5rem; /* 8px */
+            border-radius: 0.5rem;
             z-index: -1;
             animation: rainbow-move 3s linear infinite;
         }
@@ -63,11 +63,11 @@
             animation: text-color-change 6s linear infinite;
         }
         @keyframes text-color-change {
-            0%   {color: #4f46e5;} /* indigo */
-            25%  {color: #d946ef;} /* fuchsia */
-            50%  {color: #14b8a6;} /* teal */
-            75%  {color: #f97316;} /* orange */
-            100% {color: #4f46e5;} /* indigo */
+            0%   {color: #4f46e5;}
+            25%  {color: #d946ef;}
+            50%  {color: #14b8a6;}
+            75%  {color: #f97316;}
+            100% {color: #4f46e5;}
         }
     </style>
 </head>
@@ -78,46 +78,86 @@
         const { useState, useRef, useEffect } = React;
         const { createRoot } = ReactDOM;
 
+        // --- GÜVENLİ KULLANICI VERİTABANI ---
+        const credentials = new Map([
+            ['7gT3jP', 'kLp9aV'], ['aBv4kS', '8rZ2mN'], ['cD9xWq', '5jH7fE'], ['eF6zYp', '2bC3dR'], ['gH1vUo', '9sX8wT'],
+            ['iJ5tRn', '4mK1qL'], ['lM2sQp', '7nB6vC'], ['nP8rVo', '3dF4zG'], ['qR4tYn', '1hJ5kM'], ['sT9wXu', '6pL2sB'],
+            ['uV7zYo', '8cE3vD'], ['wX3vUp', '5gH1rF'], ['yZ1tRn', '2jK6qL'], ['A2bC3d', '9mN4sV'], ['B5dE6f', '4pG8wT'],
+            ['C8fG9h', '1rJ2uY'], ['D1hI2j', '7tL5xP'], ['E4jK5l', '3vN8zQ'], ['F7lM8n', '6sB1cF'], ['G9nO1p', '8wD4gH'],
+            ['H3pQ4r', '5uF7jK'], ['I6rS7t', '2xL9mN'], ['J9tU1v', '9vC2sB'], ['K2vW3x', '4gH5wT'], ['L5xY6z', '1jK8rF'],
+            ['M8z1A2', '7mN3qL'], ['N1B4C5', '3pG6vC'], ['O4D7E8', '6sB9zQ'], ['P7F9G1', '8wD2cF'], ['Q9H2I3', '5uF4gH'],
+            ['R3J5K6', '2xL7jK'], ['S6L8M9', '9vC1mN'], ['T9N1O2', '4gH3sB'], ['U2P4Q5', '1jK6wT'], ['V5R7S8', '7mN8rF'],
+            ['W8T9U1', '3pG2qL'], ['X1V3W4', '6sB5vC'], ['Y4Z6A7', '8wD8zQ'], ['Z7B9C1', '5uF1cF'], ['a3d6f8', '2xL3gH'],
+            ['b6g9h1', '9vC5jK'], ['c9j2k4', '4gH7mN'], ['d2l5m7', '1jK9sB'], ['e5n8p1', '7mN2wT'], ['f8q1r3', '3pG4rF'],
+            ['g1s4t6', '6sB7qL'], ['h4u7v9', '8wD9vC'], ['i7x1y2', '5uF2zQ'], ['j9z3a5', '2xL4cF'], ['k3b6c8', '9vC6gH'],
+            ['l6d9e1', '4gH8jK'], ['m9f2g4', '1jK1mN'], ['n2h5i7', '7mN3sB'], ['o5j8k1', '3pG5wT'], ['p8l1m3', '6sB7rF'],
+            ['q1n4o6', '8wD9qL'], ['r4p7q9', '5uF2vC'], ['s7r1s2', '2xL4zQ'], ['t9t4u5', '9vC6cF'], ['u3v7w8', '4gH8gH'],
+            ['v6x9y1', '1jK1jK'], ['w9z2a3', '7mN3mN'], ['x2b5c6', '3pG5sB'], ['y5d8e9', '6sB7wT'], ['z8f1g2', '8wD9rF'],
+            ['A1B2C3', '5uF2qL'], ['D4E5F6', '2xL4vC'], ['G7H8I9', '9vC6zQ'], ['J1K2L3', '4gH8cF'], ['M4N5O6', '1jK1gH'],
+            ['P7Q8R9', '7mN3jK'], ['S1T2U3', '3pG5mN'], ['V4W5X6', '6sB7sB'], ['Y7Z8A9', '8wD9wT'], ['B1C2D3', '5uF2rF'],
+            ['E4F5G6', '2xL4qL'], ['H7I8J9', '9vC6vC'], ['K1L2M3', '4gH8zQ'], ['N4O5P6', '1jK1cF'], ['Q7R8S9', '7mN3gH'],
+            ['T1U2V3', '3pG5jK'], ['W4X5Y6', '6sB7mN'], ['Z7A8B9', '8wD9sB'], ['c1d2e3', '5uF2wT'], ['f4g5h6', '2xL4rF'],
+            ['i7j8k9', '9vC6qL'], ['l1m2n3', '4gH8vC'], ['o4p5q6', '1jK1zQ'], ['r7s8t9', '7mN3cF'], ['u1v2w3', '3pG5gH'],
+            ['x4y5z6', '6sB7jK'], ['a7b8c9', '8wD9mN'], ['d1e2f3', '5uF2sB'], ['g4h5i6', '2xL4wT'], ['j7k8l9', '9vC6rF'],
+            ['m1n2o3', '4gH8qL'], ['p4q5r6', '1jK1vC'], ['s7t8u9', '7mN3zQ'], ['v1w2x3', '3pG5cF'], ['y4z5a6', '6sB7gH'],
+            ['b7c8d9', '8wD9jK'], ['e1f2g3', '5uF2mN'], ['h4i5j6', '2xL4sB'], ['k7l8m9', '9vC6wT'], ['n1o2p3', '4gH8rF'],
+            ['q4r5s6', '1jK1qL'], ['t7u8v9', '7mN3vC'], ['w1x2y3', '3pG5zQ'], ['z4a5b6', '6sB7cF'], ['c7d8e9', '8wD9gH'],
+            ['f1g2h3', '5uF2jK'], ['i4j5k6', '2xL4mN'], ['l7m8n9', '9vC6sB'], ['o1p2q3', '4gH8wT'], ['r4s5t6', '1jK1rF'],
+            ['u7v8w9', '7mN3qL'], ['x1y2z3', '3pG5vC'], ['a4b5c6', '6sB7zQ'], ['d7e8f9', '8wD9cF'], ['g1h2i3', '5uF2gH'],
+            ['j4k5l6', '2xL4jK'], ['m7n8o9', '9vC6mN'], ['p1q2r3', '4gH8sB'], ['s4t5u6', '1jK1wT'], ['v7w8x9', '7mN3rF'],
+            ['y1z2a3', '3pG5qL'], ['b4c5d6', '6sB7vC'], ['e7f8g9', '8wD9zQ'], ['h1i2j3', '5uF2cF'], ['k4l5m6', '2xL4gH'],
+            ['n7o8p9', '9vC6jK'], ['q1r2s3', '4gH8mN'], ['t4u5v6', '1jK1sB'], ['w7x8y9', '7mN3wT'], ['z1a2b3', '3pG5rF'],
+            ['c4d5e6', '6sB7qL'], ['f7g8h9', '8wD9vC'], ['i1j2k3', '5uF2zQ'], ['l4m5n6', '2xL4cF'], ['o7p8q9', '9vC6gH'],
+            ['r1s2t3', '4gH8jK'], ['u4v5w6', '1jK1mN'], ['x7y8z9', '7mN3sB'], ['a1b3c5', '3pG5wT'], ['d4e6f8', '6sB7rF'],
+            ['g7h9i1', '8wD9qL'], ['j2k4l6', '5uF2vC'], ['m5n7o9', '2xL4zQ'], ['p8q1r2', '9vC6cF'], ['s3t5u7', '4gH8gH'],
+            ['v9w1x3', '1jK1jK'], ['y5z7a9', '7mN3mN'], ['b2c4d6', '3pG5sB'], ['e8f1g3', '6sB7wT'], ['h5i7j9', '8wD9rF'],
+            ['k2l4m6', '5uF2qL'], ['n8o1p3', '2xL4vC'], ['q5r7s9', '9vC6zQ'], ['t2u4v6', '4gH8cF'], ['w8x1y3', '1jK1gH'],
+            ['z5a7b9', '7mN3jK'], ['c2d4e6', '3pG5mN'], ['f8g1h3', '6sB7sB'], ['i5j7k9', '8wD9wT'], ['l2m4n6', '5uF2rF'],
+            ['o8p1q3', '2xL4qL'], ['r5s7t9', '9vC6vC'], ['u2v4w6', '4gH8zQ'], ['x8y1z3', '1jK1cF'], ['a5b7c9', '7mN3gH'],
+            ['d2e4f6', '3pG5jK'], ['g8h1i3', '6sB7mN'], ['j5k7l9', '8wD9sB'], ['m2n4o6', '5uF2wT'], ['p8q1r3', '2xL4rF'],
+            ['s5t7u9', '9vC6qL'], ['v2w4x6', '4gH8vC'], ['y8z1a3', '1jK1zQ'], ['b5c7d9', '7mN3cF'], ['e2f4g6', '3pG5gH'],
+            ['h8i1j3', '6sB7jK'], ['k5l7m9', '8wD9mN'], ['n2o4p6', '5uF2sB'], ['q8r1s3', '2xL4wT'], ['t5u7v9', '9vC6rF'],
+            ['w2x4y6', '4gH8qL'], ['z8a1b3', '1jK1vC'], ['c5d7e9', '7mN3zQ'], ['f2g4h6', '3pG5cF'], ['i8j1k3', '6sB7gH'],
+            ['l5m7n9', '8wD9jK'], ['o2p4q6', '5uF2mN'], ['r8s1t3', '2xL4sB'], ['u5v7w9', '9vC6wT'], ['x2y4z6', '4gH8rF'],
+            ['a8b1c3', '1jK1qL'], ['d5e7f9', '7mN3vC'], ['g2h4i6', '3pG5zQ'], ['j8k1l3', '6sB7cF'], ['m5n7o9', '8wD9gH'],
+            ['p2q4r6', '5uF2jK'], ['s8t1u3', '2xL4mN'], ['v5w7x9', '9vC6sB'], ['y2z4a6', '4gH8wT'], ['b8c1d3', '1jK1rF'],
+            ['e5f7g9', '7mN3qL'], ['h2i4j6', '3pG5vC'], ['k8l1m3', '6sB7zQ'], ['n5o7p9', '8wD9cF'], ['q2r4s6', '5uF2gH'],
+            ['t8u1v3', '2xL4jK'], ['w5x7y9', '9vC6mN'], ['z2a4b6', '4gH8sB'], ['c8d1e3', '1jK1wT'], ['f5g7h9', '7mN3rF'],
+            ['i2j4k6', '3pG5qL'], ['l8m1n3', '6sB7vC'], ['o5p7q9', '8wD9zQ'], ['r2s4t6', '5uF2cF'], ['u8v1w3', '2xL4gH'],
+            ['x5y7z9', '9vC6jK'], ['Zq4w7e', '8r2t5y'], ['Xp1o9i', 'u6i3o1'], ['Cb5n8m', 'k2j4h6'], ['Vg9f2d', 's5a7z1'],
+            ['Bn4m7k', 'j8h6g5'], ['Lk1j8h', 'g2f4d6'], ['Pq5r8t', 'y1u3i5'], ['Oa2s5d', 'f7g9h2'], ['Iu6y9t', 'r4e1w3'],
+            ['Uj3m7k', 'l9o1p4'], ['Yt5r2e', 'w6q8a1'], ['Ts1a4z', 'e5d7c9'], ['Rg9f6c', 'v3b5n8'], ['Fv2b5n', 'm1k3j6'],
+            ['Dc4r7f', 't8g2y5'], ['Sw6a9q', 'z1x3c5'], ['Az8s5x', 'd2f4g7']
+        ]);
+        // --- BİTİŞ ---
+
         const UniversalMathRenderer = ({ text, isSolution = false }) => {
             const containerRef = useRef(null);
             useEffect(() => {
                 if (containerRef.current && text && typeof katex !== 'undefined') {
                     const contentContainer = document.createElement('div');
-                    
                     const processText = (textToProcess) => {
                         const fragment = document.createDocumentFragment();
                         const parts = textToProcess.split(/(\$\$[^$$]+\$\$|\$[^$]+\$)/g).filter(Boolean);
-                        
                         parts.forEach(part => {
                             let katexHandled = false;
                             if (part.startsWith('$$') && part.endsWith('$$')) {
                                 const span = document.createElement('span');
                                 span.className = 'inline-math';
-                                try {
-                                    katex.render(part.slice(2, -2), span, { throwOnError: false, displayMode: false });
-                                    katexHandled = true;
-                                } catch (e) { /* fallback */ }
+                                try { katex.render(part.slice(2, -2), span, { throwOnError: false, displayMode: false }); katexHandled = true; } catch (e) {}
                                 fragment.appendChild(span);
                             } else if (part.startsWith('$') && part.endsWith('$')) {
                                 const span = document.createElement('span');
-                                try {
-                                    katex.render(part.slice(1, -1), span, { throwOnError: false, displayMode: false });
-                                    katexHandled = true;
-                                } catch (e) { /* fallback */ }
+                                try { katex.render(part.slice(1, -1), span, { throwOnError: false, displayMode: false }); katexHandled = true; } catch (e) {}
                                 fragment.appendChild(span);
                             }
-                            
-                            if (!katexHandled) {
-                                fragment.appendChild(document.createTextNode(part));
-                            }
+                            if (!katexHandled) fragment.appendChild(document.createTextNode(part));
                         });
                         return fragment;
                     };
-
                     if (isSolution) {
                         const solutionWrapper = document.createElement('div');
                         solutionWrapper.className = 'bg-white p-4 sm:p-6 rounded-lg shadow-inner text-gray-700 leading-relaxed';
-                        
                         const lines = text.split('\n').filter(line => line.trim() !== '');
                         lines.forEach(line => {
                             const p = document.createElement('p');
@@ -126,22 +166,18 @@
                             solutionWrapper.appendChild(p);
                         });
                         contentContainer.appendChild(solutionWrapper);
-
                     } else {
                         contentContainer.className = "whitespace-pre-wrap font-sans text-gray-700";
                         contentContainer.appendChild(processText(text));
                     }
-                    
                     containerRef.current.innerHTML = '';
                     containerRef.current.appendChild(contentContainer);
                 }
             }, [text, isSolution]);
-
             return <div ref={containerRef} className="text-gray-800 leading-relaxed"></div>;
         };
-
-
-        const App = () => {
+        
+        const SoruCozucuPage = () => {
             const [image, setImage] = useState(null);
             const [imageBase64, setImageBase64] = useState('');
             const [selectedSubject, setSelectedSubject] = useState(null);
@@ -170,10 +206,7 @@
             const triggerFileSelect = () => fileInputRef.current.click();
 
             const callGeminiAPI = async (prompt) => {
-                if (!imageBase64) {
-                    setError('Lütfen önce bir resim dosyası seçin.');
-                    return null;
-                }
+                if (!imageBase64) { setError('Lütfen önce bir resim dosyası seçin.'); return null; }
                 setIsLoading(true);
                 setError('');
                 const payload = { contents: [{ role: "user", parts: [ { text: prompt }, { inlineData: { mimeType: "image/jpeg", data: imageBase64 } } ] }] };
@@ -213,12 +246,7 @@
             const handleSolution = async () => {
                 if(!selectedSubject) { setError('Lütfen önce bir ders seçin.'); return; }
                 setStage('solving');
-                const prompt = `Sen, lise öğrencilerine ders anlatan ve en karmaşık konuları bile en basit ve pratik yolla açıklayan bir uzmansın.
-Bu resimdeki ${selectedSubject} sorusunu çöz/açıkla.
-**En Önemli Kural:** Çözümlerin **kesinlikle** çok kısa, pratik ve bir lise öğrencisinin anlayacağı seviyede olmalı. Uzun ve ayrıntılı açıklamalardan **kesinlikle kaçın**. Sadece sorunun cevabını bulmak için gerekli olan ana adımları göster.
-- **Sayısal Dersler (Matematik, Fizik, Kimya):** Sadece kilit işlem adımlarını göster.
-- **Sözel/Biyoloji Dersleri:** Cevabı uzun paragraflar yerine, birkaç net cümle veya madde ile özetle.
-- **Biçim Kuralı:** Tüm matematiksel/bilimsel formülleri **sadece** LaTeX formatında ve çift dolar işareti arasına yazarak ('$$...$$') göster. Yanıtında **asla** tek dolar işareti ($) kullanma. Çözümü '### Çözüm:' başlığı altında sun.`;
+                const prompt = `Sen, lise öğrencilerine ders anlatan ve en karmaşık konuları bile en basit ve pratik yolla açıklayan bir uzmansın. Bu resimdeki ${selectedSubject} sorusunu çöz/açıkla. **En Önemli Kural:** Çözümlerin **kesinlikle** çok kısa, pratik ve bir lise öğrencisinin anlayacağı seviyede olmalı. Uzun ve ayrıntılı açıklamalardan **kesinlikle kaçın**. Sadece sorunun cevabını bulmak için gerekli olan ana adımları göster. **Biçim Kuralı:** Tüm matematiksel/bilimsel formülleri **sadece** LaTeX formatında ve çift dolar işareti arasına yazarak ('$$...$$') göster. Yanıtında **asla** tek dolar işareti ($) kullanma. Çözümü '### Çözüm:' başlığı altında sun.`;
                 const resultText = await callGeminiAPI(prompt);
                 if (resultText) { setSolution(resultText.replace('### Çözüm:', '').trim()); setStage('solution_done'); } 
                 else { setStage('analysis_done'); }
@@ -231,37 +259,95 @@ Bu resimdeki ${selectedSubject} sorusunu çöz/açıkla.
             };
 
             return (
-                <div className="min-h-screen bg-gray-50 flex items-center justify-center p-2 sm:p-4">
-                    <div className="w-full max-w-4xl mx-auto bg-white rounded-2xl shadow-xl p-4 sm:p-6 md:p-8">
-                        <header className="text-center mb-6">
-                            <p className="halkali-title text-lg font-semibold mb-2">Halkalı Fen Bilimleri Merkezi</p>
-                            <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-500 to-red-500">
-                                Soru Çözücü
-                            </h1>
-                            <p className="text-base font-semibold bg-gradient-to-r from-blue-500 to-purple-600 bg-clip-text text-transparent mt-2">Berkant Hoca</p>
-                            <p className="text-gray-600 mt-3 text-sm sm:text-base">Sorunun fotoğrafını yükle, dersini seç ve çözümü gör!</p>
-                        </header>
-                        {error && <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative mb-4" role="alert">{error}</div>}
-                        <div className="flex flex-col gap-6">
-                            <div className="flex flex-col md:flex-row gap-4 md:gap-6 items-start">
-                                <div className="w-full md:w-1/2 flex flex-col items-center justify-center bg-gray-50 p-4 sm:p-6 rounded-lg border-2 border-dashed h-full">
-                                    <input type="file" accept="image/*" onChange={handleFileChange} ref={fileInputRef} className="hidden" />
-                                    {image ? (<img src={image} alt="Yüklenen Soru" className="max-w-full max-h-48 sm:max-h-60 mx-auto rounded-lg shadow-md" />) : (<div className="text-center py-8 cursor-pointer w-full" onClick={triggerFileSelect}><svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true"><path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg><p className="mt-2 text-sm font-medium text-gray-700">1. Adım: Fotoğraf Yükle</p></div>)}
-                                </div>
-                                <div className="w-full md:w-1/2 flex flex-col justify-center space-y-3">
-                                     {image && <button onClick={resetApp} className="w-full bg-red-500 text-white font-semibold py-3 px-4 rounded-lg hover:bg-red-600 transition duration-300">Yeni Soru Yükle</button>}
-                                    <button onClick={handleAnalysis} disabled={isLoading || !selectedSubject} className="w-full bg-green-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-green-600 transition duration-300 disabled:bg-gray-400 disabled:cursor-not-allowed">3. Adım: Analiz</button>
-                                    <button onClick={handleSolution} disabled={isLoading || stage !== 'analysis_done'} className="w-full bg-purple-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-purple-600 transition duration-300 disabled:bg-gray-400 disabled:cursor-not-allowed">4. Adım: Çözüm</button>
-                                    {isLoading && <div className="mt-4 flex items-center justify-center"><div className="loader"></div></div>}
-                                </div>
+                <div className="w-full max-w-4xl mx-auto bg-white rounded-2xl shadow-xl p-4 sm:p-6 md:p-8">
+                    <header className="text-center mb-6">
+                        <p className="halkali-title text-lg font-semibold mb-2">Halkalı Fen Bilimleri Merkezi</p>
+                        <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-500 to-red-500">Soru Çözücü</h1>
+                        <p className="text-base font-semibold bg-gradient-to-r from-blue-500 to-purple-600 bg-clip-text text-transparent mt-2">Berkant Hoca</p>
+                        <p className="text-gray-600 mt-3 text-sm sm:text-base">Sorunun fotoğrafını yükle, dersini seç ve çözümü gör!</p>
+                    </header>
+                    {error && <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative mb-4" role="alert">{error}</div>}
+                    <div className="flex flex-col gap-6">
+                        <div className="flex flex-col md:flex-row gap-4 md:gap-6 items-start">
+                            <div className="w-full md:w-1/2 flex flex-col items-center justify-center bg-gray-50 p-4 sm:p-6 rounded-lg border-2 border-dashed h-full">
+                                <input type="file" accept="image/*" onChange={handleFileChange} ref={fileInputRef} className="hidden" />
+                                {image ? (<img src={image} alt="Yüklenen Soru" className="max-w-full max-h-48 sm:max-h-60 mx-auto rounded-lg shadow-md" />) : (<div className="text-center py-8 cursor-pointer w-full" onClick={triggerFileSelect}><svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true"><path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg><p className="mt-2 text-sm font-medium text-gray-700">1. Adım: Fotoğraf Yükle</p></div>)}
                             </div>
-                            {image && (<div className="w-full pt-4 border-t"><h2 className="text-lg font-semibold text-center text-gray-700 mb-3">2. Adım: Dersi Seç</h2><div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">{subjects.map(subject => (<button key={subject} onClick={() => setSelectedSubject(subject)} className={`py-2 px-3 rounded-lg font-semibold transition-all duration-200 text-sm sm:text-base ${selectedSubject === subject ? 'rainbow-active' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}>{subject}</button>))}</div></div>)}
-                            {(analysis || solution) && (<div className="space-y-8 mt-6 pt-6 border-t">{analysis && (<div className="bg-blue-50 p-4 sm:p-5 rounded-lg shadow-sm border border-blue-200"><h2 className="text-lg sm:text-xl font-bold text-blue-800 mb-3">Analiz</h2><UniversalMathRenderer text={analysis} /></div>)}{solution && (<div><h2 className="text-xl sm:text-2xl font-bold text-indigo-800 mb-4 text-center">Çözüm</h2><UniversalMathRenderer text={solution} isSolution={true} /></div>)}</div>)}
+                            <div className="w-full md:w-1/2 flex flex-col justify-center space-y-3">
+                                 {image && <button onClick={resetApp} className="w-full bg-red-500 text-white font-semibold py-3 px-4 rounded-lg hover:bg-red-600 transition duration-300">Yeni Soru Yükle</button>}
+                                <button onClick={handleAnalysis} disabled={isLoading || !selectedSubject} className="w-full bg-green-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-green-600 transition duration-300 disabled:bg-gray-400 disabled:cursor-not-allowed">3. Adım: Analiz</button>
+                                <button onClick={handleSolution} disabled={isLoading || stage !== 'analysis_done'} className="w-full bg-purple-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-purple-600 transition duration-300 disabled:bg-gray-400 disabled:cursor-not-allowed">4. Adım: Çözüm</button>
+                                {isLoading && <div className="mt-4 flex items-center justify-center"><div className="loader"></div></div>}
+                            </div>
                         </div>
+                        {image && (<div className="w-full pt-4 border-t"><h2 className="text-lg font-semibold text-center text-gray-700 mb-3">2. Adım: Dersi Seç</h2><div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">{subjects.map(subject => (<button key={subject} onClick={() => setSelectedSubject(subject)} className={`py-2 px-3 rounded-lg font-semibold transition-all duration-200 text-sm sm:text-base ${selectedSubject === subject ? 'rainbow-active' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}>{subject}</button>))}</div></div>)}
+                        {(analysis || solution) && (<div className="space-y-8 mt-6 pt-6 border-t">{analysis && (<div className="bg-blue-50 p-4 sm:p-5 rounded-lg shadow-sm border border-blue-200"><h2 className="text-lg sm:text-xl font-bold text-blue-800 mb-3">Analiz</h2><UniversalMathRenderer text={analysis} /></div>)}{solution && (<div><h2 className="text-xl sm:text-2xl font-bold text-indigo-800 mb-4 text-center">Çözüm</h2><UniversalMathRenderer text={solution} isSolution={true} /></div>)}</div>)}
                     </div>
                 </div>
             );
         };
+        
+        const LoginPage = ({ onLoginSuccess }) => {
+            const [username, setUsername] = useState('');
+            const [password, setPassword] = useState('');
+            const [loginError, setLoginError] = useState('');
+
+            const handleLogin = (e) => {
+                e.preventDefault();
+                if (credentials.has(username) && credentials.get(username) === password) {
+                    onLoginSuccess();
+                } else {
+                    setLoginError('Kullanıcı adı veya şifre hatalı. Halkalı Fen Bilimleri Merkezi öğrencisi iseniz Berkant Hocadan kullanıcı adı ve şifre alabilirsiniz.');
+                }
+            };
+
+            return (
+                <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 px-4">
+                    <div className="w-full max-w-md bg-white p-8 rounded-2xl shadow-lg text-center">
+                        <h1 className="text-xl sm:text-2xl font-bold text-gray-800 mb-4">
+                            <span className="halkali-title block mb-1">Halkalı Fen Bilimleri Merkezi</span>
+                            <span>Soru Çözücü Uygulamasına Hoş Geldiniz</span>
+                        </h1>
+                        <p className="text-gray-600 mb-6">Lütfen giriş yapınız.</p>
+                        <form onSubmit={handleLogin} className="space-y-4">
+                            <input 
+                                type="text"
+                                placeholder="Kullanıcı Adı"
+                                value={username}
+                                onChange={(e) => setUsername(e.target.value)}
+                                className="w-full px-4 py-3 bg-purple-50 border border-purple-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                            />
+                            <input 
+                                type="password"
+                                placeholder="Şifre"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                className="w-full px-4 py-3 bg-purple-50 border border-purple-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                            />
+                            <button type="submit" className="w-full bg-indigo-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-indigo-700 transition duration-300">
+                                Giriş Yap
+                            </button>
+                        </form>
+                        {loginError && <p className="mt-4 text-sm text-red-600 bg-red-100 p-3 rounded-lg">{loginError}</p>}
+                    </div>
+                </div>
+            );
+        };
+
+        const App = () => {
+            const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+            if (!isLoggedIn) {
+                return <LoginPage onLoginSuccess={() => setIsLoggedIn(true)} />;
+            }
+
+            return (
+                 <div className="min-h-screen bg-gray-50 flex items-center justify-center p-2 sm:p-4">
+                    <SoruCozucuPage />
+                 </div>
+            );
+        };
+
         const container = document.getElementById('root');
         const root = createRoot(container);
         root.render(<App />);
