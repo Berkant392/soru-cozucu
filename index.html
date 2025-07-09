@@ -131,6 +131,30 @@
         ]);
         // --- BİTİŞ ---
 
+        // --- MOTİVASYON VERİTABANI ---
+        const quotes = [
+            { text: "Başarının sırrı, amaca sadık kalmaktır.", author: "Benjamin Disraeli" },
+            { text: "Matematik, bilimlerin kraliçesidir.", author: "Carl Friedrich Gauss" },
+            { text: "Çalışmak, dehanın anasıdır.", author: "Publilius Syrus" },
+            { text: "En büyük zafer, kendimize karşı kazandığımızdır.", author: "Platon" },
+            { text: "Bir şeyi gerçekten yapmak isteyen bir yol bulur, istemeyen mazeret bulur.", author: "Jim Rohn" },
+            { text: "Geleceği tahmin etmenin en iyi yolu, onu yaratmaktır.", author: "Peter Drucker" },
+            { text: "Damlayan su, mermeri deler.", author: "Atasözü" },
+            { text: "Hayal gücü, bilgiden daha önemlidir.", author: "Albert Einstein" },
+            { text: "Başarı, coşkunuzu kaybetmeden bir başarısızlıktan diğerine gitme yeteneğidir.", author: "Winston Churchill" },
+            { text: "Bugünün işini yarına bırakma.", author: "Atasözü" },
+        ];
+
+        const quoteColors = [
+            'bg-blue-50 text-blue-800 border-blue-200',
+            'bg-green-50 text-green-800 border-green-200',
+            'bg-yellow-50 text-yellow-800 border-yellow-200',
+            'bg-pink-50 text-pink-800 border-pink-200',
+            'bg-gray-100 text-gray-800 border-gray-200',
+            'bg-red-50 text-red-800 border-red-200',
+        ];
+        // --- BİTİŞ ---
+
         const UniversalMathRenderer = ({ text, isSolution = false }) => {
             const containerRef = useRef(null);
             useEffect(() => {
@@ -184,17 +208,35 @@
             const [analysis, setAnalysis] = useState('');
             const [solution, setSolution] = useState('');
             const [isLoading, setIsLoading] = useState(false);
+            const [loadingMessage, setLoadingMessage] = useState('');
             const [error, setError] = useState('');
             const [stage, setStage] = useState('upload'); 
+            const [showFeedback, setShowFeedback] = useState(false);
+            const [showReSolvePrompt, setShowReSolvePrompt] = useState(false);
+            const [motivationalQuote, setMotivationalQuote] = useState(null);
             const fileInputRef = useRef(null);
 
             const subjects = ['Matematik', 'Fizik', 'Kimya', 'Biyoloji', 'Tarih', 'Coğrafya', 'Edebiyat', 'Türkçe'];
+
+            const getRandomQuote = () => {
+                const quoteIndex = Math.floor(Math.random() * quotes.length);
+                const colorIndex = Math.floor(Math.random() * quoteColors.length);
+                return {
+                    ...quotes[quoteIndex],
+                    colorClass: quoteColors[colorIndex]
+                };
+            };
+
+            useEffect(() => {
+                setMotivationalQuote(getRandomQuote());
+            }, []);
 
             const handleFileChange = (event) => {
                 const file = event.target.files[0];
                 if (file) {
                     setImage(URL.createObjectURL(file));
                     setError(''); setAnalysis(''); setSolution(''); setSelectedSubject(null);
+                    setShowFeedback(false); setShowReSolvePrompt(false);
                     setStage('image_uploaded');
                     const reader = new FileReader();
                     reader.onloadend = () => setImageBase64(reader.result.split(',')[1]);
@@ -220,41 +262,71 @@
                          throw new Error(`API Sunucu Hatası: ${response.status} - ${errorText}`);
                     }
                     const result = await response.json();
-                    if (result.candidates && result.candidates[0]?.content?.parts?.[0]) {
-                        return result.candidates[0].content.parts[0].text;
-                    } else {
-                        const errorMessage = result.promptFeedback?.blockReason || JSON.stringify(result);
-                        throw new Error(`API'den geçerli bir yanıt alınamadı: ${errorMessage}`);
-                    }
+                    if (result.candidates && result.candidates[0]?.content?.parts?.[0]) return result.candidates[0].content.parts[0].text;
+                    const errorMessage = result.promptFeedback?.blockReason || JSON.stringify(result);
+                    throw new Error(`API'den geçerli bir yanıt alınamadı: ${errorMessage}`);
                 } catch (err) {
                     setError(err.message || 'Bilinmeyen bir hata oluştu.');
                     return null;
                 } finally {
                     setIsLoading(false);
+                    setLoadingMessage('');
                 }
             };
 
-            const handleAnalysis = async () => {
+            const handleAnalysis = async (isReAnalysis = false) => {
                 if(!selectedSubject) { setError('Lütfen önce bir ders seçin.'); return; }
                 setStage('analyzing');
-                const prompt = `Sen bir ${selectedSubject} uzmanısın. Bu resimdeki ${selectedSubject} sorusunda verilenleri ve istenenleri analiz et. Cevabını '### Analiz:' başlığı altında, 'Verilenler:' ve 'İstenenler:' etiketleriyle, madde madde listele. Matematiksel/bilimsel ifadeleri metin içinde göstermen gerekirse $a=2b$ gibi tek dolar işareti kullanabilirsin.`;
+                setLoadingMessage(isReAnalysis ? 'Hata anlaşılıyor, yeniden analiz ediliyor...' : 'Analiz ediliyor...');
+                const prompt = `Sen bir ${selectedSubject} uzmanısın. Bu resimdeki ${selectedSubject} sorusunu analiz et.
+**Kesin Kurallar:**
+1.  Sadece soruda verilenleri ve ne istendiğini, bir lise öğrencisinin anlayacağı net ve kısa ifadelerle listele.
+2.  Çözüme dair **hiçbir ipucu verme** veya çözümü **yapma**. Sadece analiz yap.
+3.  Cevabını '### Analiz:' başlığı altında, 'Verilenler:' ve 'İstenenler:' etiketleriyle oluştur.
+4.  Analizin sonuna **mutlaka** şu cümleyi ekle: "Analiz tamamlandı. Çözümü görmek için 4. Adım: Çözüm butonuna tıklayabilirsin."`;
                 const analysisResult = await callGeminiAPI(prompt);
-                if (analysisResult) { setAnalysis(analysisResult.replace(/### Analiz:/g, '')); setStage('analysis_done'); } 
-                else { setStage('subject_selected'); }
+                if (analysisResult) { 
+                    setAnalysis(analysisResult.replace(/### Analiz:/g, '')); 
+                    setStage('analysis_done'); 
+                    return true;
+                } else { 
+                    setStage('subject_selected'); 
+                    return false;
+                }
             };
 
-            const handleSolution = async () => {
+            const handleSolution = async (isReSolve = false) => {
                 if(!selectedSubject) { setError('Lütfen önce bir ders seçin.'); return; }
                 setStage('solving');
-                const prompt = `Sen, lise öğrencilerine ders anlatan ve en karmaşık konuları bile en basit ve pratik yolla açıklayan bir uzmansın. Bu resimdeki ${selectedSubject} sorusunu çöz/açıkla. **En Önemli Kural:** Çözümlerin **kesinlikle** çok kısa, pratik ve bir lise öğrencisinin anlayacağı seviyede olmalı. Uzun ve ayrıntılı açıklamalardan **kesinlikle kaçın**. Sadece sorunun cevabını bulmak için gerekli olan ana adımları göster. **Biçim Kuralı:** Tüm matematiksel/bilimsel formülleri **sadece** LaTeX formatında ve çift dolar işareti arasına yazarak ('$$...$$') göster. Yanıtında **asla** tek dolar işareti ($) kullanma. Çözümü '### Çözüm:' başlığı altında sun.`;
+                setLoadingMessage(isReSolve ? 'Analiz tamamlandı, yeniden çözülüyor...' : 'Çözüm oluşturuluyor...');
+                let prompt = `Sen, lise öğrencilerine ders anlatan ve en karmaşık konuları bile en basit ve pratik yolla açıklayan bir uzmansın. Bu resimdeki ${selectedSubject} sorusunu çöz/açıkla. **En Önemli Kural:** Çözümlerin **kesinlikle** çok kısa, pratik ve bir lise öğrencisinin anlayacağı seviyede olmalı. Uzun ve ayrıntılı açıklamalardan **kesinlikle kaçın**. Sadece sorunun cevabını bulmak için gerekli olan ana adımları göster. **Biçim Kuralı:** Tüm matematiksel/bilimsel formülleri **sadece** LaTeX formatında ve çift dolar işareti arasına yazarak ('$$...$$') göster. Yanıtında **asla** tek dolar işareti ($) kullanma. Çözümü '### Çözüm:' başlığı altında sun.`;
+                if(isReSolve) {
+                    prompt = `Daha önceki çözümüm hatalı veya eksik olarak işaretlendi. Az önce yaptığım detaylı analizi dikkate alarak, bu resimdeki ${selectedSubject} sorusunu **önceki hatamı tekrarlamayacak şekilde, çok daha dikkatli, anlaşılır ve basite indirgeyerek** yeniden çöz. Adımları net bir şekilde açıkla ve doğru sonuca ulaş. **Biçim Kuralı:** Tüm matematiksel/bilimsel formülleri **sadece** LaTeX formatında ve çift dolar işareti arasına yazarak ('$$...$$') göster. Yanıtında **asla** tek dolar işareti ($) kullanma. Çözümü '### Çözüm:' başlığı altında sun.`;
+                }
                 const resultText = await callGeminiAPI(prompt);
-                if (resultText) { setSolution(resultText.replace('### Çözüm:', '').trim()); setStage('solution_done'); } 
-                else { setStage('analysis_done'); }
+                if (resultText) { 
+                    setSolution(resultText.replace('### Çözüm:', '').trim()); 
+                    setStage('solution_done'); 
+                    setShowFeedback(true);
+                } else { 
+                    setStage('analysis_done'); 
+                }
+            };
+            
+            const handleReSolve = async () => {
+                setShowReSolvePrompt(false);
+                setSolution('');
+                const analysisSuccess = await handleAnalysis(true);
+                if(analysisSuccess){
+                    await handleSolution(true);
+                }
             };
             
             const resetApp = () => {
                 setImage(null); setImageBase64(''); setAnalysis(''); setSolution('');
                 setError(''); setStage('upload'); setSelectedSubject(null);
+                setShowFeedback(false); setShowReSolvePrompt(false);
+                setMotivationalQuote(getRandomQuote());
                 if(fileInputRef.current) fileInputRef.current.value = "";
             };
 
@@ -264,7 +336,13 @@
                         <p className="halkali-title text-lg font-semibold mb-2">Halkalı Fen Bilimleri Merkezi</p>
                         <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-500 to-red-500">Soru Çözücü</h1>
                         <p className="text-base font-semibold bg-gradient-to-r from-blue-500 to-purple-600 bg-clip-text text-transparent mt-2">Berkant Hoca</p>
-                        <p className="text-gray-600 mt-3 text-sm sm:text-base">Sorunun fotoğrafını yükle, dersini seç ve çözümü gör!</p>
+                        {motivationalQuote && (
+                            <div className={`mt-4 p-3 rounded-lg text-sm transition-colors duration-500 border ${motivationalQuote.colorClass}`}>
+                                <p className="italic">"{motivationalQuote.text}"</p>
+                                <p className="font-semibold mt-1 text-right">- {motivationalQuote.author}</p>
+                            </div>
+                        )}
+                        <p className="text-gray-600 mt-4 text-sm sm:text-base">Sorunun fotoğrafını yükle, dersini seç ve çözümü gör!</p>
                     </header>
                     {error && <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative mb-4" role="alert">{error}</div>}
                     <div className="flex flex-col gap-6">
@@ -275,13 +353,37 @@
                             </div>
                             <div className="w-full md:w-1/2 flex flex-col justify-center space-y-3">
                                  {image && <button onClick={resetApp} className="w-full bg-red-500 text-white font-semibold py-3 px-4 rounded-lg hover:bg-red-600 transition duration-300">Yeni Soru Yükle</button>}
-                                <button onClick={handleAnalysis} disabled={isLoading || !selectedSubject} className="w-full bg-green-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-green-600 transition duration-300 disabled:bg-gray-400 disabled:cursor-not-allowed">3. Adım: Analiz</button>
-                                <button onClick={handleSolution} disabled={isLoading || stage !== 'analysis_done'} className="w-full bg-purple-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-purple-600 transition duration-300 disabled:bg-gray-400 disabled:cursor-not-allowed">4. Adım: Çözüm</button>
-                                {isLoading && <div className="mt-4 flex items-center justify-center"><div className="loader"></div></div>}
+                                <button onClick={() => handleAnalysis(false)} disabled={isLoading || !selectedSubject} className="w-full bg-green-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-green-600 transition duration-300 disabled:bg-gray-400 disabled:cursor-not-allowed">3. Adım: Analiz</button>
+                                <button onClick={() => handleSolution(false)} disabled={isLoading || stage !== 'analysis_done'} className="w-full bg-purple-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-purple-600 transition duration-300 disabled:bg-gray-400 disabled:cursor-not-allowed">4. Adım: Çözüm</button>
+                                {isLoading && <div className="mt-4 flex flex-col items-center justify-center"><div className="loader"></div><p className="text-gray-600 mt-2">{loadingMessage}</p></div>}
                             </div>
                         </div>
                         {image && (<div className="w-full pt-4 border-t"><h2 className="text-lg font-semibold text-center text-gray-700 mb-3">2. Adım: Dersi Seç</h2><div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">{subjects.map(subject => (<button key={subject} onClick={() => setSelectedSubject(subject)} className={`py-2 px-3 rounded-lg font-semibold transition-all duration-200 text-sm sm:text-base ${selectedSubject === subject ? 'rainbow-active' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}>{subject}</button>))}</div></div>)}
                         {(analysis || solution) && (<div className="space-y-8 mt-6 pt-6 border-t">{analysis && (<div className="bg-blue-50 p-4 sm:p-5 rounded-lg shadow-sm border border-blue-200"><h2 className="text-lg sm:text-xl font-bold text-blue-800 mb-3">Analiz</h2><UniversalMathRenderer text={analysis} /></div>)}{solution && (<div><h2 className="text-xl sm:text-2xl font-bold text-indigo-800 mb-4 text-center">Çözüm</h2><UniversalMathRenderer text={solution} isSolution={true} /></div>)}</div>)}
+                        
+                        {showFeedback && (
+                            <div className="mt-6 p-4 bg-purple-100 border border-purple-200 rounded-lg text-center">
+                                <h3 className="font-semibold text-purple-800 mb-3">Çözümü Değerlendir</h3>
+                                <div className="flex justify-center gap-4">
+                                    <button onClick={() => { alert('Geri bildiriminiz için teşekkürler!'); setShowFeedback(false); }} className="flex items-center gap-2 bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition">
+                                        <span>👍</span> Beğendim
+                                    </button>
+                                    <button onClick={() => { setShowFeedback(false); setShowReSolvePrompt(true); }} className="flex items-center gap-2 bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition">
+                                        <span>👎</span> Hatalı/Eksik
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                        {showReSolvePrompt && (
+                             <div className="mt-6 p-4 bg-yellow-100 border border-yellow-200 rounded-lg text-center">
+                                <p className="font-semibold text-yellow-800 mb-3">Geri bildiriminiz için teşekkürler, artık daha dikkatli olacağım. Soruyu daha dikkatli bir şekilde yeniden çözmemi ister misiniz?</p>
+                                <div className="flex justify-center gap-4">
+                                    <button onClick={handleReSolve} className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition">Evet, yeniden çöz</button>
+                                    <button onClick={() => setShowReSolvePrompt(false)} className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition">Hayır, teşekkürler</button>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
             );
