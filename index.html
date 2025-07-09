@@ -187,87 +187,34 @@
             return <div ref={containerRef} className="text-gray-800 leading-relaxed"></div>;
         };
         
-        const ChartRenderer = ({ data }) => {
-            const chartRef = useRef(null);
-            const chartInstance = useRef(null);
-
-            useEffect(() => {
-                if (chartRef.current && data) {
-                    if (chartInstance.current) {
-                        chartInstance.current.destroy();
-                    }
-                    const ctx = chartRef.current.getContext('2d');
-                    chartInstance.current = new Chart(ctx, {
-                        type: data.type,
-                        data: data.data,
-                        options: data.options || {}
-                    });
-                }
-            }, [data]);
-
-            return <canvas ref={chartRef}></canvas>;
-        };
-
         const SoruCozucuPage = () => {
             const [image, setImage] = useState(null);
             const [imageBase64, setImageBase64] = useState('');
             const [selectedSubject, setSelectedSubject] = useState(null);
             const [analysis, setAnalysis] = useState('');
             const [solution, setSolution] = useState('');
-            const [chartData, setChartData] = useState(null);
             const [isLoading, setIsLoading] = useState(false);
             const [loadingMessage, setLoadingMessage] = useState('');
             const [error, setError] = useState('');
             const [stage, setStage] = useState('upload'); 
             const [showFeedback, setShowFeedback] = useState(false);
             const [showReSolvePrompt, setShowReSolvePrompt] = useState(false);
-            const [motivationalQuote, setMotivationalQuote] = useState({ text: 'Yükleniyor...', author: '', colorClass: 'bg-gray-100' });
+            const [motivationalQuote, setMotivationalQuote] = useState(null);
             const fileInputRef = useRef(null);
 
             const subjects = ['Matematik', 'Fizik', 'Kimya', 'Biyoloji', 'Tarih', 'Coğrafya', 'Edebiyat', 'Türkçe'];
 
-            const fetchMotivationalQuote = async () => {
-                const prompt = "Lise öğrencileri için başarı, çalışma, kazanma, matematiğin veya bilimin önemi gibi konularda motive edici, çeşitli ve daha önce pek duyulmamış, tek bir özlü söz oluştur. Bu söz bir atasözü, anonim bir söz veya ünlü bir kişiye ait olabilir. Cevabını JSON formatında `{ \"quote\": \"söz metni\", \"author\": \"söyleyen kişi\" }` olarak ver.";
-                
-                let chatHistory = [];
-                chatHistory.push({ role: "user", parts: [{ text: prompt }] });
-                const payload = { 
-                    contents: chatHistory,
-                    generationConfig: {
-                        responseMimeType: "application/json",
-                        responseSchema: {
-                            type: "OBJECT",
-                            properties: {
-                                "quote": { "type": "STRING" },
-                                "author": { "type": "STRING" }
-                            },
-                            required: ["quote", "author"]
-                        }
-                    }
+            const getRandomQuote = () => {
+                const quoteIndex = Math.floor(Math.random() * quotes.length);
+                const colorIndex = Math.floor(Math.random() * quoteColors.length);
+                return {
+                    ...quotes[quoteIndex],
+                    colorClass: quoteColors[colorIndex]
                 };
-
-                const apiUrl = `/.netlify/functions/yapay-zeka`;
-
-                try {
-                    const response = await fetch(apiUrl, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    });
-                    const result = await response.json();
-                    if (result.candidates && result.candidates[0].content && result.candidates[0].content.parts && result.candidates[0].content.parts.length > 0) {
-                        const json = JSON.parse(result.candidates[0].content.parts[0].text);
-                        const colorIndex = Math.floor(Math.random() * quoteColors.length);
-                        setMotivationalQuote({ text: json.quote, author: json.author, colorClass: quoteColors[colorIndex] });
-                    }
-                } catch (e) {
-                    console.error("Motivasyon sözü alınamadı:", e);
-                    setMotivationalQuote({ text: "En büyük zafer, kendimize karşı kazandığımızdır.", author: "Platon", colorClass: 'bg-blue-50 text-blue-800 border-blue-200' });
-                }
             };
-            
+
             useEffect(() => {
-                fetchMotivationalQuote();
+                setMotivationalQuote(getRandomQuote());
             }, []);
 
             const handleFileChange = (event) => {
@@ -275,7 +222,7 @@
                 if (file) {
                     setImage(URL.createObjectURL(file));
                     setError(''); setAnalysis(''); setSolution(''); setSelectedSubject(null);
-                    setShowFeedback(false); setShowReSolvePrompt(false); setChartData(null);
+                    setShowFeedback(false); setShowReSolvePrompt(false);
                     setStage('image_uploaded');
                     const reader = new FileReader();
                     reader.onloadend = () => setImageBase64(reader.result.split(',')[1]);
@@ -338,37 +285,13 @@
                 if(!selectedSubject) { setError('Lütfen önce bir ders seçin.'); return; }
                 setStage('solving');
                 setLoadingMessage(isReSolve ? 'Analiz tamamlandı, yeniden çözülüyor...' : 'Çözüm oluşturuluyor...');
-                
-                let prompt = `Sen, lise öğrencilerine ders anlatan ve en karmaşık konuları bile en basit ve pratik yolla açıklayan bir ${selectedSubject} uzmanısın. Bu resimdeki soruyu çöz/açıkla.
-**KURALLAR:**
-1.  **Çözümün Anlaşılırlığı:** Çözümü adım adım, kısa ve pratik bir şekilde açıkla.
-2.  **Görselleştirme Kararı (Sadece Matematik için):** Eğer ders Matematik ise, çözümü daha anlaşılır kılmak için bir grafik veya geometrik şekil çizmenin **gerekli olup olmadığına karar ver.** Görselleştirme, sadece sorunun anlaşılmasına **ciddi anlamda** yardımcı olacaksa kullanılmalıdır.
-3.  **Çıktı Formatı:** Cevabını iki bölümde ver:
-    * '### Çözüm:' başlığı altında adım adım metin çözümünü yaz. Tüm matematiksel formülleri '$$...$$' arasına al.
-    * Eğer bir görsel oluşturmaya karar verdiysen, metin çözümünün sonuna '### Çizim:' başlığı ekle ve hemen altına, çizim için gerekli verileri içeren bir JSON nesnesi yaz. JSON formatı şöyle olmalı: { "type": "line", "data": { "labels": [...], "datasets": [...] }, "options": {...} } veya { "type": "scatter", "data": { "datasets": [...] }, "options": {...} }. JSON'u kod bloğu içine alma.
-Eğer görsel gerekmiyorsa, '### Çizim:' bölümünü ve JSON nesnesini ekleme.`;
-
+                let prompt = `Sen, lise öğrencilerine ders anlatan ve en karmaşık konuları bile en basit ve pratik yolla açıklayan bir uzmansın. Bu resimdeki ${selectedSubject} sorusunu çöz/açıkla. **En Önemli Kural:** Çözümlerin **kesinlikle** çok kısa, pratik ve bir lise öğrencisinin anlayacağı seviyede olmalı. Uzun ve ayrıntılı açıklamalardan **kesinlikle kaçın**. Sadece sorunun cevabını bulmak için gerekli olan ana adımları göster. **Biçim Kuralı:** Tüm matematiksel/bilimsel formülleri **sadece** LaTeX formatında ve çift dolar işareti arasına yazarak ('$$...$$') göster. Yanıtında **asla** tek dolar işareti ($) kullanma. Çözümü '### Çözüm:' başlığı altında sun.`;
                 if(isReSolve) {
-                    prompt = `Daha önceki çözümüm hatalı veya eksik olarak işaretlendi. Az önce yaptığım detaylı analizi dikkate alarak, bu resimdeki ${selectedSubject} sorusunu **önceki hatamı tekrarlamayacak şekilde, çok daha dikkatli, anlaşılır ve basite indirgeyerek** yeniden çöz. Adımları net bir şekilde açıkla ve doğru sonuca ulaş.` + prompt;
+                    prompt = `Daha önceki çözümüm hatalı veya eksik olarak işaretlendi. Az önce yaptığım detaylı analizi dikkate alarak, bu resimdeki ${selectedSubject} sorusunu **önceki hatamı tekrarlamayacak şekilde, çok daha dikkatli, anlaşılır ve basite indirgeyerek** yeniden çöz. Adımları net bir şekilde açıkla ve doğru sonuca ulaş. **Biçim Kuralı:** Tüm matematiksel/bilimsel formülleri **sadece** LaTeX formatında ve çift dolar işareti arasına yazarak ('$$...$$') göster. Yanıtında **asla** tek dolar işareti ($) kullanma. Çözümü '### Çözüm:' başlığı altında sun.`;
                 }
-                
                 const resultText = await callGeminiAPI(prompt);
-                
-                if (resultText) {
-                    const parts = resultText.split('### Çizim:');
-                    setSolution(parts[0].replace('### Çözüm:', '').trim());
-                    if (parts.length > 1 && parts[1].trim()) {
-                        try {
-                            const jsonString = parts[1].replace(/```json\n|```/g, '');
-                            const parsedChartData = JSON.parse(jsonString);
-                            setChartData(parsedChartData);
-                        } catch (e) {
-                            console.error("Çizim verisi ayrıştırılamadı:", e);
-                            setChartData(null);
-                        }
-                    } else {
-                        setChartData(null);
-                    }
+                if (resultText) { 
+                    setSolution(resultText.replace('### Çözüm:', '').trim()); 
                     setStage('solution_done'); 
                     setShowFeedback(true);
                 } else { 
@@ -379,7 +302,6 @@ Eğer görsel gerekmiyorsa, '### Çizim:' bölümünü ve JSON nesnesini ekleme.
             const handleReSolve = async () => {
                 setShowReSolvePrompt(false);
                 setSolution('');
-                setChartData(null);
                 const analysisSuccess = await handleAnalysis(true);
                 if(analysisSuccess){
                     await handleSolution(true);
@@ -389,8 +311,8 @@ Eğer görsel gerekmiyorsa, '### Çizim:' bölümünü ve JSON nesnesini ekleme.
             const resetApp = () => {
                 setImage(null); setImageBase64(''); setAnalysis(''); setSolution('');
                 setError(''); setStage('upload'); setSelectedSubject(null);
-                setShowFeedback(false); setShowReSolvePrompt(false); setChartData(null);
-                fetchMotivationalQuote();
+                setShowFeedback(false); setShowReSolvePrompt(false);
+                setMotivationalQuote(getRandomQuote());
                 if(fileInputRef.current) fileInputRef.current.value = "";
             };
 
@@ -423,7 +345,7 @@ Eğer görsel gerekmiyorsa, '### Çizim:' bölümünü ve JSON nesnesini ekleme.
                             </div>
                         </div>
                         {image && (<div className="w-full pt-4 border-t"><h2 className="text-lg font-semibold text-center text-gray-700 mb-3">2. Adım: Dersi Seç</h2><div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">{subjects.map(subject => (<button key={subject} onClick={() => setSelectedSubject(subject)} className={`py-2 px-3 rounded-lg font-semibold transition-all duration-200 text-sm sm:text-base ${selectedSubject === subject ? 'rainbow-active' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}>{subject}</button>))}</div></div>)}
-                        {(analysis || solution) && (<div className="space-y-8 mt-6 pt-6 border-t">{analysis && (<div className="bg-blue-50 p-4 sm:p-5 rounded-lg shadow-sm border border-blue-200"><h2 className="text-lg sm:text-xl font-bold text-blue-800 mb-3">Analiz</h2><UniversalMathRenderer text={analysis} /></div>)}{solution && (<div><h2 className="text-xl sm:text-2xl font-bold text-indigo-800 mb-4 text-center">Çözüm</h2><UniversalMathRenderer text={solution} isSolution={true} /></div>)}{chartData && (<div><h2 className="text-xl sm:text-2xl font-bold text-indigo-800 mb-4 text-center">Görselleştirme</h2><div className="bg-white p-4 rounded-lg shadow-md"><ChartRenderer data={chartData} /></div></div>)}</div>)}
+                        {(analysis || solution) && (<div className="space-y-8 mt-6 pt-6 border-t">{analysis && (<div className="bg-blue-50 p-4 sm:p-5 rounded-lg shadow-sm border border-blue-200"><h2 className="text-lg sm:text-xl font-bold text-blue-800 mb-3">Analiz</h2><UniversalMathRenderer text={analysis} /></div>)}{solution && (<div><h2 className="text-xl sm:text-2xl font-bold text-indigo-800 mb-4 text-center">Çözüm</h2><UniversalMathRenderer text={solution} isSolution={true} /></div>)}</div>)}
                         
                         {showFeedback && (
                             <div className="mt-6 p-4 bg-purple-100 border border-purple-200 rounded-lg text-center">
