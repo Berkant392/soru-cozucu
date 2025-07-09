@@ -7,7 +7,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" xintegrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" xintegrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -42,11 +41,11 @@
         .inline-math {
             display: inline-block;
             background-color: #eef2ff;
-            padding: 1px 6px;
+            padding: 2px 8px;
             border-radius: 6px;
-            margin: 0 3px;
-            border: 1px solid #e0e7ff;
-            vertical-align: middle;
+            margin: 0 4px;
+            border: 1px solid #c7d2fe;
+            vertical-align: baseline;
         }
         .loader {
             border: 5px solid #f3f3f3;
@@ -131,60 +130,48 @@
             ['Dc4r7f', 't8g2y5'], ['Sw6a9q', 'z1x3c5'], ['Az8s5x', 'd2f4g7']
         ]);
         // --- BİTİŞ ---
-        
-        const quoteColors = [
-            'bg-blue-50 text-blue-800 border-blue-200',
-            'bg-green-50 text-green-800 border-green-200',
-            'bg-yellow-50 text-yellow-800 border-yellow-200',
-            'bg-pink-50 text-pink-800 border-pink-200',
-            'bg-gray-100 text-gray-800 border-gray-200',
-            'bg-red-50 text-red-800 border-red-200',
-        ];
 
-        const UniversalMathRenderer = ({ text, isSolution = false }) => {
+        const UniversalMathRenderer = ({ text }) => {
             const containerRef = useRef(null);
             useEffect(() => {
                 if (containerRef.current && text && typeof katex !== 'undefined') {
                     const contentContainer = document.createElement('div');
-                    const processText = (textToProcess) => {
-                        const fragment = document.createDocumentFragment();
-                        const parts = textToProcess.split(/(\$\$[^$$]+\$\$|\$[^$]+\$)/g).filter(Boolean);
+                    const lines = text.split('\n').filter(line => line.trim() !== '');
+                    lines.forEach(line => {
+                        const p = document.createElement('p');
+                        p.className = 'mb-2 text-gray-700 leading-relaxed flex items-baseline flex-wrap';
+
+                        const parts = line.split(/(\*\*.*?\*\*|\$\$[\s\S]*?\$\$|\$[\s\S]*?\$)/g).filter(Boolean);
+
                         parts.forEach(part => {
-                            let katexHandled = false;
-                            if (part.startsWith('$$') && part.endsWith('$$')) {
+                            if (part.startsWith('**') && part.endsWith('**')) {
+                                const strong = document.createElement('strong');
+                                strong.className = 'font-bold text-gray-900 mr-2';
+                                strong.textContent = part.slice(2, -2);
+                                p.appendChild(strong);
+                            } else if ((part.startsWith('$$') && part.endsWith('$$')) || (part.startsWith('$') && part.endsWith('$'))) {
+                                const isBlock = part.startsWith('$$');
+                                const mathContent = part.slice(isBlock ? 2 : 1, isBlock ? -2 : -1);
                                 const span = document.createElement('span');
                                 span.className = 'inline-math';
-                                try { katex.render(part.slice(2, -2), span, { throwOnError: false, displayMode: false }); katexHandled = true; } catch (e) {}
-                                fragment.appendChild(span);
-                            } else if (part.startsWith('$') && part.endsWith('$')) {
-                                const span = document.createElement('span');
-                                try { katex.render(part.slice(1, -1), span, { throwOnError: false, displayMode: false }); katexHandled = true; } catch (e) {}
-                                fragment.appendChild(span);
+                                try {
+                                    katex.render(mathContent, span, { throwOnError: false, displayMode: false });
+                                } catch (e) {
+                                    span.textContent = part;
+                                }
+                                p.appendChild(span);
+                            } else {
+                                p.appendChild(document.createTextNode(part));
                             }
-                            if (!katexHandled) fragment.appendChild(document.createTextNode(part));
                         });
-                        return fragment;
-                    };
-                    if (isSolution) {
-                        const solutionWrapper = document.createElement('div');
-                        solutionWrapper.className = 'bg-white p-4 sm:p-6 rounded-lg shadow-inner text-gray-700 leading-relaxed';
-                        const lines = text.split('\n').filter(line => line.trim() !== '');
-                        lines.forEach(line => {
-                            const p = document.createElement('p');
-                            p.className = 'mb-3';
-                            p.appendChild(processText(line));
-                            solutionWrapper.appendChild(p);
-                        });
-                        contentContainer.appendChild(solutionWrapper);
-                    } else {
-                        contentContainer.className = "whitespace-pre-wrap font-sans text-gray-700";
-                        contentContainer.appendChild(processText(text));
-                    }
+                        contentContainer.appendChild(p);
+                    });
+                    
                     containerRef.current.innerHTML = '';
                     containerRef.current.appendChild(contentContainer);
                 }
-            }, [text, isSolution]);
-            return <div ref={containerRef} className="text-gray-800 leading-relaxed"></div>;
+            }, [text]);
+            return <div ref={containerRef}></div>;
         };
         
         const SoruCozucuPage = () => {
@@ -193,58 +180,24 @@
             const [selectedSubject, setSelectedSubject] = useState(null);
             const [analysis, setAnalysis] = useState('');
             const [solution, setSolution] = useState('');
+            const [recommendations, setRecommendations] = useState('');
             const [isLoading, setIsLoading] = useState(false);
             const [loadingMessage, setLoadingMessage] = useState('');
             const [error, setError] = useState('');
             const [stage, setStage] = useState('upload'); 
             const [showFeedback, setShowFeedback] = useState(false);
             const [showReSolvePrompt, setShowReSolvePrompt] = useState(false);
-            const [motivationalQuote, setMotivationalQuote] = useState(null);
+            const [feedbackMessage, setFeedbackMessage] = useState('');
             const fileInputRef = useRef(null);
 
             const subjects = ['Matematik', 'Fizik', 'Kimya', 'Biyoloji', 'Tarih', 'Coğrafya', 'Edebiyat', 'Türkçe'];
-
-            const getRandomQuote = () => {
-                const quotes = [
-                    { text: "Başarının sırrı, amaca sadık kalmaktır.", author: "Benjamin Disraeli" },
-                    { text: "Matematik, bilimlerin kraliçesidir.", author: "Carl Friedrich Gauss" },
-                    { text: "Çalışmak, dehanın anasıdır.", author: "Publilius Syrus" },
-                    { text: "En büyük zafer, kendimize karşı kazandığımızdır.", author: "Platon" },
-                    { text: "Bir şeyi gerçekten yapmak isteyen bir yol bulur, istemeyen mazeret bulur.", author: "Jim Rohn" },
-                    { text: "Geleceği tahmin etmenin en iyi yolu, onu yaratmaktır.", author: "Peter Drucker" },
-                    { text: "Damlayan su, mermeri deler.", author: "Atasözü" },
-                    { text: "Hayal gücü, bilgiden daha önemlidir.", author: "Albert Einstein" },
-                    { text: "Başarı, coşkunuzu kaybetmeden bir başarısızlıktan diğerine gitme yeteneğidir.", author: "Winston Churchill" },
-                    { text: "Bugünün işini yarına bırakma.", author: "Atasözü" },
-                    { text: "Bilginin efendisi olmak için çalışmanın uşağı olmak gerekir.", author: "Honoré de Balzac" },
-                    { text: "Zorluklar, başarının değerini artıran süslerdir.", author: "Molière" },
-                    { text: "Hiçbir şey, azim kadar önemli değildir.", author: "Calvin Coolidge" },
-                    { text: "En büyük risk, hiç risk almamaktır.", author: "Mark Zuckerberg" },
-                    { text: "Tek bildiğim, hiçbir şey bilmediğimdir.", author: "Sokrates" },
-                    { text: "Düşünmeden öğrenmek, zaman kaybıdır.", author: "Konfüçyüs" },
-                    { text: "Küçük başlangıçlar, büyük sonuçlar doğurur.", author: "Anonim" },
-                    { text: "Azimle çalışan, dağları deler.", author: "Atasözü" },
-                    { text: "Bilim ve sanat, bir kuşun iki kanadı gibidir.", author: "Goethe" },
-                    { text: "Başlamak için en uygun zaman, şimdidir.", author: "Anonim" }
-                ];
-                const quoteIndex = Math.floor(Math.random() * quotes.length);
-                const colorIndex = Math.floor(Math.random() * quoteColors.length);
-                return {
-                    ...quotes[quoteIndex],
-                    colorClass: quoteColors[colorIndex]
-                };
-            };
-
-            useEffect(() => {
-                setMotivationalQuote(getRandomQuote());
-            }, []);
 
             const handleFileChange = (event) => {
                 const file = event.target.files[0];
                 if (file) {
                     setImage(URL.createObjectURL(file));
                     setError(''); setAnalysis(''); setSolution(''); setSelectedSubject(null);
-                    setShowFeedback(false); setShowReSolvePrompt(false);
+                    setShowFeedback(false); setShowReSolvePrompt(false); setRecommendations('');
                     setStage('image_uploaded');
                     const reader = new FileReader();
                     reader.onloadend = () => setImageBase64(reader.result.split(',')[1]);
@@ -282,38 +235,45 @@
                 }
             };
 
-            const handleAnalysis = async (isReAnalysis = false) => {
+            const handleAnalysis = async () => {
                 if(!selectedSubject) { setError('Lütfen önce bir ders seçin.'); return; }
                 setStage('analyzing');
-                setLoadingMessage(isReAnalysis ? 'Hata anlaşılıyor, yeniden analiz ediliyor...' : 'Analiz ediliyor...');
-                const prompt = `Sen bir ${selectedSubject} uzmanısın. Bu resimdeki ${selectedSubject} sorusunu analiz et.
-**Kesin Kurallar:**
-1.  Sadece soruda verilenleri ve ne istendiğini, bir lise öğrencisinin anlayacağı net ve kısa ifadelerle listele.
-2.  Çözüme dair **hiçbir ipucu verme** veya çözümü **yapma**. Sadece analiz yap.
-3.  Cevabını '### Analiz:' başlığı altında, 'Verilenler:' ve 'İstenenler:' etiketleriyle oluştur.
-4.  Analizin sonuna **mutlaka** şu cümleyi ekle: "Analiz tamamlandı. Çözümü görmek için 4. Adım: Çözüm butonuna tıklayabilirsin."`;
+                setLoadingMessage('Analiz ediliyor...');
+                const prompt = `Sen bir ${selectedSubject} uzmanısın. Bu resimdeki ${selectedSubject} sorusunu analiz et. Analizin kısa, net ve bir lise öğrencisinin anlayacağı dilde olsun. Çözüme dair ipucu verme. Cevabını '### Analiz:' başlığı altında, **Verilenler:** ve **İstenenler:** etiketlerini markdown formatında kalın yazarak oluştur. Maddelerin başına '👉' emojisi koy. Analizin sonuna mutlaka şu cümleyi ekle: "Analiz tamamlandı. Çözümü görmek için 4. Adım: Çözüm butonuna tıklayabilirsin."`;
                 const analysisResult = await callGeminiAPI(prompt);
                 if (analysisResult) { 
-                    setAnalysis(analysisResult.replace(/### Analiz:/g, '')); 
+                    setAnalysis(analysisResult.replace(/### Analiz:/g, '').trim()); 
                     setStage('analysis_done'); 
-                    return true;
                 } else { 
                     setStage('subject_selected'); 
-                    return false;
                 }
             };
-
+            
             const handleSolution = async (isReSolve = false) => {
                 if(!selectedSubject) { setError('Lütfen önce bir ders seçin.'); return; }
                 setStage('solving');
                 setLoadingMessage(isReSolve ? 'Analiz tamamlandı, yeniden çözülüyor...' : 'Çözüm oluşturuluyor...');
-                let prompt = `Sen, lise öğrencilerine ders anlatan ve en karmaşık konuları bile en basit ve pratik yolla açıklayan bir uzmansın. Bu resimdeki ${selectedSubject} sorusunu çöz/açıkla. **En Önemli Kural:** Çözümlerin **kesinlikle** çok kısa, pratik ve bir lise öğrencisinin anlayacağı seviyede olmalı. Uzun ve ayrıntılı açıklamalardan **kesinlikle kaçın**. Sadece sorunun cevabını bulmak için gerekli olan ana adımları göster. **Biçim Kuralı:** Tüm matematiksel/bilimsel formülleri **sadece** LaTeX formatında ve çift dolar işareti arasına yazarak ('$$...$$') göster. Yanıtında **asla** tek dolar işareti ($) kullanma. Çözümü '### Çözüm:' başlığı altında sun.`;
+                let prompt = `Sen, YKS ve lise müfredatına yüzde yüz hakim, konuların inceliklerini bilen (örneğin türevde çift katlı kökün ekstremum olmaması gibi) eşi benzeri olmayan bir ${selectedSubject} öğretmenisin. Bu resimdeki soruyu çöz.
+**Kesin Kurallar:**
+1.  **En Pratik Yol:** Soruyu çözmek için lise öğrencisi seviyesine en uygun, en pratik ve en kolay anlaşılır yöntemi seç.
+2.  **Doğruluk:** Çözümün kesinlikle doğru olsun.
+3.  **Anlaşılırlık:** Çözümü adım adım, kısa ve net bir şekilde açıkla. Gereksiz yere uzatma.
+4.  **Format:** Cevabını iki bölümde ver:
+    * '### Çözüm:' başlığı altında metin çözümünü yaz. Tüm matematiksel ifadeleri '$...$' veya '$$...$$' arasına al.
+    * '### Tavsiyeler:' başlığı altında, bu soruyla ilgili 2-3 madde halinde, samimi bir öğretmen gibi, öğrencinin gelecekte benzer soruları çözmesine yardımcı olacak tavsiyeler ver. Tavsiyelerdeki maddelerin başına '💡' emojisi koy.`;
+
                 if(isReSolve) {
-                    prompt = `Daha önceki çözümüm hatalı veya eksik olarak işaretlendi. Az önce yaptığım detaylı analizi dikkate alarak, bu resimdeki ${selectedSubject} sorusunu **önceki hatamı tekrarlamayacak şekilde, çok daha dikkatli, anlaşılır ve basite indirgeyerek** yeniden çöz. Adımları net bir şekilde açıkla ve doğru sonuca ulaş. **Biçim Kuralı:** Tüm matematiksel/bilimsel formülleri **sadece** LaTeX formatında ve çift dolar işareti arasına yazarak ('$$...$$') göster. Yanıtında **asla** tek dolar işareti ($) kullanma. Çözümü '### Çözüm:' başlığı altında sun.`;
+                    prompt = `Daha önceki çözümüm hatalı veya eksik olarak işaretlendi. Az önce yaptığım detaylı analizi dikkate alarak, bu resimdeki ${selectedSubject} sorusunu **önceki hatamı tekrarlamayacak şekilde, çok daha dikkatli, anlaşılır ve basite indirgeyerek** yeniden çöz. Adımları net bir şekilde açıkla ve doğru sonuca ulaş.` + prompt;
                 }
+                
                 const resultText = await callGeminiAPI(prompt);
-                if (resultText) { 
-                    setSolution(resultText.replace('### Çözüm:', '').trim()); 
+                
+                if (resultText) {
+                    const solutionAndRest = resultText.split('### Tavsiyeler:');
+                    setSolution(solutionAndRest[0].replace('### Çözüm:', '').trim());
+                    if (solutionAndRest.length > 1) {
+                        setRecommendations(solutionAndRest[1].trim());
+                    }
                     setStage('solution_done'); 
                     setShowFeedback(true);
                 } else { 
@@ -324,17 +284,25 @@
             const handleReSolve = async () => {
                 setShowReSolvePrompt(false);
                 setSolution('');
-                const analysisSuccess = await handleAnalysis(true);
-                if(analysisSuccess){
+                setRecommendations('');
+                setAnalysis('');
+                setLoadingMessage('Hata anlaşılıyor, yeniden ve daha detaylı analiz ediliyor...');
+                const reAnalysisPrompt = `Sen bir ${selectedSubject} uzmanısın ve bir önceki çözümün hatalı olarak işaretlendi. Bu resimdeki soruyu şimdi **çok daha dikkatli ve detaylı bir şekilde** yeniden analiz et. Soruda verilen tüm bilgileri, sayısal değerleri, birimleri ve koşulları atlamadan, açık ve net bir şekilde listele. Özellikle şekilli sorularda, şekildeki tüm detayları (açılar, uzunluklar, noktalar) dikkate al. Sorunun tam olarak ne istediğini belirt. **KESİNLİKLE çözüm yapma.** Cevabını '### Analiz:' başlığı altında sun.`;
+                const analysisResult = await callGeminiAPI(reAnalysisPrompt);
+
+                if (analysisResult) {
+                    setAnalysis(analysisResult.replace(/### Analiz:/g, '').trim());
                     await handleSolution(true);
+                } else {
+                    setError("Yeniden analiz sırasında bir hata oluştu.");
+                    setStage('subject_selected');
                 }
             };
             
             const resetApp = () => {
                 setImage(null); setImageBase64(''); setAnalysis(''); setSolution('');
                 setError(''); setStage('upload'); setSelectedSubject(null);
-                setShowFeedback(false); setShowReSolvePrompt(false);
-                setMotivationalQuote(getRandomQuote());
+                setShowFeedback(false); setShowReSolvePrompt(false); setRecommendations('');
                 if(fileInputRef.current) fileInputRef.current.value = "";
             };
 
@@ -344,12 +312,6 @@
                         <p className="halkali-title text-lg font-semibold mb-2">Halkalı Fen Bilimleri Merkezi</p>
                         <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-500 to-red-500">Soru Çözücü</h1>
                         <p className="text-base font-semibold bg-gradient-to-r from-blue-500 to-purple-600 bg-clip-text text-transparent mt-2">Berkant Hoca</p>
-                        {motivationalQuote && (
-                            <div className={`mt-4 p-3 rounded-lg text-sm transition-colors duration-500 border ${motivationalQuote.colorClass}`}>
-                                <p className="italic">"{motivationalQuote.text}"</p>
-                                <p className="font-semibold mt-1 text-right">- {motivationalQuote.author}</p>
-                            </div>
-                        )}
                         <p className="text-gray-600 mt-4 text-sm sm:text-base">Sorunun fotoğrafını yükle, dersini seç ve çözümü gör!</p>
                     </header>
                     {error && <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative mb-4" role="alert">{error}</div>}
@@ -361,19 +323,19 @@
                             </div>
                             <div className="w-full md:w-1/2 flex flex-col justify-center space-y-3">
                                  {image && <button onClick={resetApp} className="w-full bg-red-500 text-white font-semibold py-3 px-4 rounded-lg hover:bg-red-600 transition duration-300">Yeni Soru Yükle</button>}
-                                <button onClick={() => handleAnalysis(false)} disabled={isLoading || !selectedSubject} className="w-full bg-green-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-green-600 transition duration-300 disabled:bg-gray-400 disabled:cursor-not-allowed">3. Adım: Analiz</button>
+                                <button onClick={handleAnalysis} disabled={isLoading || !selectedSubject} className="w-full bg-green-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-green-600 transition duration-300 disabled:bg-gray-400 disabled:cursor-not-allowed">3. Adım: Analiz</button>
                                 <button onClick={() => handleSolution(false)} disabled={isLoading || stage !== 'analysis_done'} className="w-full bg-purple-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-purple-600 transition duration-300 disabled:bg-gray-400 disabled:cursor-not-allowed">4. Adım: Çözüm</button>
                                 {isLoading && <div className="mt-4 flex flex-col items-center justify-center"><div className="loader"></div><p className="text-gray-600 mt-2">{loadingMessage}</p></div>}
                             </div>
                         </div>
                         {image && (<div className="w-full pt-4 border-t"><h2 className="text-lg font-semibold text-center text-gray-700 mb-3">2. Adım: Dersi Seç</h2><div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">{subjects.map(subject => (<button key={subject} onClick={() => setSelectedSubject(subject)} className={`py-2 px-3 rounded-lg font-semibold transition-all duration-200 text-sm sm:text-base ${selectedSubject === subject ? 'rainbow-active' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}>{subject}</button>))}</div></div>)}
-                        {(analysis || solution) && (<div className="space-y-8 mt-6 pt-6 border-t">{analysis && (<div className="bg-blue-50 p-4 sm:p-5 rounded-lg shadow-sm border border-blue-200"><h2 className="text-lg sm:text-xl font-bold text-blue-800 mb-3">Analiz</h2><UniversalMathRenderer text={analysis} /></div>)}{solution && (<div><h2 className="text-xl sm:text-2xl font-bold text-indigo-800 mb-4 text-center">Çözüm</h2><UniversalMathRenderer text={solution} isSolution={true} /></div>)}</div>)}
+                        {(analysis || solution) && (<div className="space-y-8 mt-6 pt-6 border-t">{analysis && (<div className="bg-blue-50 p-4 sm:p-5 rounded-lg shadow-sm border border-blue-200"><h2 className="text-lg sm:text-xl font-bold text-blue-800 mb-3">Analiz</h2><UniversalMathRenderer text={analysis} /></div>)}{solution && (<div><h2 className="text-xl sm:text-2xl font-bold text-indigo-800 mb-4 text-center">Çözüm</h2><UniversalMathRenderer text={solution} /></div>)}{recommendations && (<div className="mt-6"><h2 className="text-xl sm:text-2xl font-bold text-green-700 mb-4 text-center">💡 Sana Tavsiyeler</h2><div className="bg-green-100 p-4 sm:p-5 rounded-lg shadow-sm border border-green-300"><UniversalMathRenderer text={recommendations} /></div></div>)}</div>)}
                         
                         {showFeedback && (
                             <div className="mt-6 p-4 bg-purple-100 border border-purple-200 rounded-lg text-center">
                                 <h3 className="font-semibold text-purple-800 mb-3">Çözümü Değerlendir</h3>
                                 <div className="flex justify-center gap-4">
-                                    <button onClick={() => { alert('Geri bildiriminiz için teşekkürler!'); setShowFeedback(false); }} className="flex items-center gap-2 bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition">
+                                    <button onClick={() => { setFeedbackMessage("Geri bildiriminiz için teşekkürler! Bu çözüm gelecekteki yanıtlara referans olacaktır."); setShowFeedback(false); setTimeout(() => setFeedbackMessage(''), 3000); }} className="flex items-center gap-2 bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition">
                                         <span>👍</span> Beğendim
                                     </button>
                                     <button onClick={() => { setShowFeedback(false); setShowReSolvePrompt(true); }} className="flex items-center gap-2 bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition">
@@ -382,7 +344,7 @@
                                 </div>
                             </div>
                         )}
-
+                        {feedbackMessage && <div className="mt-4 p-3 text-center text-green-800 bg-green-100 rounded-lg">{feedbackMessage}</div>}
                         {showReSolvePrompt && (
                              <div className="mt-6 p-4 bg-yellow-100 border border-yellow-200 rounded-lg text-center">
                                 <p className="font-semibold text-yellow-800 mb-3">Geri bildiriminiz için teşekkürler, artık daha dikkatli olacağım. Soruyu daha dikkatli bir şekilde yeniden çözmemi ister misiniz?</p>
