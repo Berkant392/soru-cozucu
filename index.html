@@ -7,6 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" xintegrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" xintegrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -204,6 +205,28 @@
             const subjects = ['Matematik', 'Fizik', 'Kimya', 'Biyoloji', 'Tarih', 'Coğrafya', 'Edebiyat', 'Türkçe'];
 
             const getRandomQuote = () => {
+                const quotes = [
+                    { text: "Başarının sırrı, amaca sadık kalmaktır.", author: "Benjamin Disraeli" },
+                    { text: "Matematik, bilimlerin kraliçesidir.", author: "Carl Friedrich Gauss" },
+                    { text: "Çalışmak, dehanın anasıdır.", author: "Publilius Syrus" },
+                    { text: "En büyük zafer, kendimize karşı kazandığımızdır.", author: "Platon" },
+                    { text: "Bir şeyi gerçekten yapmak isteyen bir yol bulur, istemeyen mazeret bulur.", author: "Jim Rohn" },
+                    { text: "Geleceği tahmin etmenin en iyi yolu, onu yaratmaktır.", author: "Peter Drucker" },
+                    { text: "Damlayan su, mermeri deler.", author: "Atasözü" },
+                    { text: "Hayal gücü, bilgiden daha önemlidir.", author: "Albert Einstein" },
+                    { text: "Başarı, coşkunuzu kaybetmeden bir başarısızlıktan diğerine gitme yeteneğidir.", author: "Winston Churchill" },
+                    { text: "Bugünün işini yarına bırakma.", author: "Atasözü" },
+                    { text: "Bilginin efendisi olmak için çalışmanın uşağı olmak gerekir.", author: "Honoré de Balzac" },
+                    { text: "Zorluklar, başarının değerini artıran süslerdir.", author: "Molière" },
+                    { text: "Hiçbir şey, azim kadar önemli değildir.", author: "Calvin Coolidge" },
+                    { text: "En büyük risk, hiç risk almamaktır.", author: "Mark Zuckerberg" },
+                    { text: "Tek bildiğim, hiçbir şey bilmediğimdir.", author: "Sokrates" },
+                    { text: "Düşünmeden öğrenmek, zaman kaybıdır.", author: "Konfüçyüs" },
+                    { text: "Küçük başlangıçlar, büyük sonuçlar doğurur.", author: "Anonim" },
+                    { text: "Azimle çalışan, dağları deler.", author: "Atasözü" },
+                    { text: "Bilim ve sanat, bir kuşun iki kanadı gibidir.", author: "Goethe" },
+                    { text: "Başlamak için en uygun zaman, şimdidir.", author: "Anonim" }
+                ];
                 const quoteIndex = Math.floor(Math.random() * quotes.length);
                 const colorIndex = Math.floor(Math.random() * quoteColors.length);
                 return {
@@ -237,8 +260,9 @@
                 setIsLoading(true);
                 setError('');
                 const payload = { contents: [{ role: "user", parts: [ { text: prompt }, { inlineData: { mimeType: "image/jpeg", data: imageBase64 } } ] }] };
-                const apiKey = ""; 
-                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+                
+                const apiUrl = `/.netlify/functions/yapay-zeka`;
+
                 try {
                     const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
                     if (!response.ok) {
