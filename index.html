@@ -179,6 +179,7 @@
             const [imageBase64, setImageBase64] = useState('');
             const [selectedSubject, setSelectedSubject] = useState(null);
             const [analysis, setAnalysis] = useState('');
+            const [simplifiedQuestion, setSimplifiedQuestion] = useState('');
             const [solution, setSolution] = useState('');
             const [recommendations, setRecommendations] = useState('');
             const [isLoading, setIsLoading] = useState(false);
@@ -197,7 +198,7 @@
                 if (file) {
                     setImage(URL.createObjectURL(file));
                     setError(''); setAnalysis(''); setSolution(''); setSelectedSubject(null);
-                    setShowFeedback(false); setShowReSolvePrompt(false); setRecommendations('');
+                    setShowFeedback(false); setShowReSolvePrompt(false); setRecommendations(''); setSimplifiedQuestion('');
                     setStage('image_uploaded');
                     const reader = new FileReader();
                     reader.onloadend = () => setImageBase64(reader.result.split(',')[1]);
@@ -239,7 +240,7 @@
                 if(!selectedSubject) { setError('Lütfen önce bir ders seçin.'); return; }
                 setStage('analyzing');
                 setLoadingMessage('Analiz ediliyor...');
-                const prompt = `Sen bir ${selectedSubject} uzmanısın. Bu resimdeki ${selectedSubject} sorusunu analiz et. Analizin kısa, net ve bir lise öğrencisinin anlayacağı dilde olsun. Çözüme dair ipucu verme. Cevabını '### Analiz:' başlığı altında, **Verilenler:** ve **İstenenler:** etiketlerini markdown formatında kalın yazarak oluştur. Maddelerin başına '👉' emojisi koy. Analizin sonuna mutlaka şu cümleyi ekle: "Analiz tamamlandı. Çözümü görmek için 4. Adım: Çözüm butonuna tıklayabilirsin."`;
+                const prompt = `Sen bir ${selectedSubject} uzmanısın. Bu resimdeki ${selectedSubject} sorusunu analiz et. Özellikle şekilli veya grafikli sorularda, önce görseldeki tüm verileri (noktalar, açılar, uzunluklar, denklemler vb.) dikkatlice çıkar. Analizin kısa, net ve bir lise öğrencisinin anlayacağı dilde olsun. Çözüme dair ipucu verme. Cevabını '### Analiz:' başlığı altında, **Verilenler:** ve **İstenenler:** etiketlerini markdown formatında kalın yazarak oluştur. Maddelerin başına '👉' emojisi koy. Analizin sonuna mutlaka şu cümleyi ekle: "Analiz tamamlandı. Çözümü görmek için 4. Adım: Çözüm butonuna tıklayabilirsin."`;
                 const analysisResult = await callGeminiAPI(prompt);
                 if (analysisResult) { 
                     setAnalysis(analysisResult.replace(/### Analiz:/g, '').trim()); 
@@ -252,8 +253,10 @@
             const handleSolution = async (isReSolve = false) => {
                 if(!selectedSubject) { setError('Lütfen önce bir ders seçin.'); return; }
                 setStage('solving');
-                setLoadingMessage(isReSolve ? 'Analiz tamamlandı, yeniden çözülüyor...' : 'Çözüm oluşturuluyor...');
+                setLoadingMessage(isReSolve ? 'Yeniden çözülüyor...' : 'Çözüm oluşturuluyor...');
                 let prompt = `Sen, YKS ve lise müfredatına yüzde yüz hakim, konuların inceliklerini bilen (örneğin türevde çift katlı kökün ekstremum olmaması gibi) eşi benzeri olmayan bir ${selectedSubject} öğretmenisin. Bu resimdeki soruyu çöz.
+**ÖNCELİK 1: Soruyu Basitleştirme.** Eğer soru uzun bir metin içeriyorsa, önce '### Soruyu Basitleştirelim:' başlığı altında sorunun özünü, öğrencinin anlayacağı şekilde yeniden yaz. Soru zaten matematiksel ve net ise bu adımı atla.
+**ÖNCELİK 2: Çözüm.**
 **Kesin Kurallar:**
 1.  **En Pratik Yol:** Soruyu çözmek için lise öğrencisi seviyesine en uygun, en pratik ve en kolay anlaşılır yöntemi seç.
 2.  **Doğruluk:** Çözümün kesinlikle doğru olsun.
@@ -269,10 +272,19 @@
                 const resultText = await callGeminiAPI(prompt);
                 
                 if (resultText) {
-                    const solutionAndRest = resultText.split('### Tavsiyeler:');
-                    setSolution(solutionAndRest[0].replace('### Çözüm:', '').trim());
-                    if (solutionAndRest.length > 1) {
-                        setRecommendations(solutionAndRest[1].trim());
+                    const simplifiedPart = resultText.split('### Çözüm:')[0];
+                    const solutionAndRest = resultText.split('### Çözüm:')[1] || '';
+                    
+                    if(simplifiedPart.includes('### Soruyu Basitleştirelim:')){
+                        setSimplifiedQuestion(simplifiedPart.replace('### Soruyu Basitleştirelim:', '').trim());
+                    } else {
+                        setSimplifiedQuestion('');
+                    }
+
+                    const solutionParts = solutionAndRest.split('### Tavsiyeler:');
+                    setSolution(solutionParts[0].trim());
+                    if (solutionParts.length > 1) {
+                        setRecommendations(solutionParts[1].trim());
                     }
                     setStage('solution_done'); 
                     setShowFeedback(true);
@@ -286,6 +298,7 @@
                 setSolution('');
                 setRecommendations('');
                 setAnalysis('');
+                setSimplifiedQuestion('');
                 setLoadingMessage('Hata anlaşılıyor, yeniden ve daha detaylı analiz ediliyor...');
                 const reAnalysisPrompt = `Sen bir ${selectedSubject} uzmanısın ve bir önceki çözümün hatalı olarak işaretlendi. Bu resimdeki soruyu şimdi **çok daha dikkatli ve detaylı bir şekilde** yeniden analiz et. Soruda verilen tüm bilgileri, sayısal değerleri, birimleri ve koşulları atlamadan, açık ve net bir şekilde listele. Özellikle şekilli sorularda, şekildeki tüm detayları (açılar, uzunluklar, noktalar) dikkate al. Sorunun tam olarak ne istediğini belirt. **KESİNLİKLE çözüm yapma.** Cevabını '### Analiz:' başlığı altında sun.`;
                 const analysisResult = await callGeminiAPI(reAnalysisPrompt);
@@ -302,7 +315,7 @@
             const resetApp = () => {
                 setImage(null); setImageBase64(''); setAnalysis(''); setSolution('');
                 setError(''); setStage('upload'); setSelectedSubject(null);
-                setShowFeedback(false); setShowReSolvePrompt(false); setRecommendations('');
+                setShowFeedback(false); setShowReSolvePrompt(false); setRecommendations(''); setSimplifiedQuestion('');
                 if(fileInputRef.current) fileInputRef.current.value = "";
             };
 
@@ -329,7 +342,7 @@
                             </div>
                         </div>
                         {image && (<div className="w-full pt-4 border-t"><h2 className="text-lg font-semibold text-center text-gray-700 mb-3">2. Adım: Dersi Seç</h2><div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">{subjects.map(subject => (<button key={subject} onClick={() => setSelectedSubject(subject)} className={`py-2 px-3 rounded-lg font-semibold transition-all duration-200 text-sm sm:text-base ${selectedSubject === subject ? 'rainbow-active' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}>{subject}</button>))}</div></div>)}
-                        {(analysis || solution) && (<div className="space-y-8 mt-6 pt-6 border-t">{analysis && (<div className="bg-blue-50 p-4 sm:p-5 rounded-lg shadow-sm border border-blue-200"><h2 className="text-lg sm:text-xl font-bold text-blue-800 mb-3">Analiz</h2><UniversalMathRenderer text={analysis} /></div>)}{solution && (<div><h2 className="text-xl sm:text-2xl font-bold text-indigo-800 mb-4 text-center">Çözüm</h2><UniversalMathRenderer text={solution} /></div>)}{recommendations && (<div className="mt-6"><h2 className="text-xl sm:text-2xl font-bold text-green-700 mb-4 text-center">💡 Sana Tavsiyeler</h2><div className="bg-green-100 p-4 sm:p-5 rounded-lg shadow-sm border border-green-300"><UniversalMathRenderer text={recommendations} /></div></div>)}</div>)}
+                        {(analysis || solution) && (<div className="space-y-8 mt-6 pt-6 border-t">{analysis && (<div className="bg-blue-50 p-4 sm:p-5 rounded-lg shadow-sm border border-blue-200"><h2 className="text-lg sm:text-xl font-bold text-blue-800 mb-3">Analiz</h2><UniversalMathRenderer text={analysis} /></div>)}{simplifiedQuestion && (<div className="bg-yellow-50 p-4 sm:p-5 rounded-lg shadow-sm border border-yellow-200"><h2 className="text-lg sm:text-xl font-bold text-yellow-800 mb-3">Soruyu Basitleştirelim</h2><UniversalMathRenderer text={simplifiedQuestion} /></div>)}{solution && (<div><h2 className="text-xl sm:text-2xl font-bold text-indigo-800 mb-4 text-center">Çözüm</h2><UniversalMathRenderer text={solution} /></div>)}{recommendations && (<div className="mt-6"><h2 className="text-xl sm:text-2xl font-bold text-green-700 mb-4 text-center">💡 Sana Tavsiyeler</h2><div className="bg-green-100 p-4 sm:p-5 rounded-lg shadow-sm border border-green-300"><UniversalMathRenderer text={recommendations} /></div></div>)}</div>)}
                         
                         {showFeedback && (
                             <div className="mt-6 p-4 bg-purple-100 border border-purple-200 rounded-lg text-center">
