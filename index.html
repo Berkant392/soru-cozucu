@@ -240,7 +240,7 @@
                 if(!selectedSubject) { setError('Lütfen önce bir ders seçin.'); return; }
                 setStage('analyzing');
                 setLoadingMessage('Analiz ediliyor...');
-                const prompt = `Sen bir ${selectedSubject} uzmanısın. Bu resimdeki ${selectedSubject} sorusunu analiz et. Özellikle şekilli veya grafikli sorularda, önce görseldeki tüm verileri (noktalar, açılar, uzunluklar, denklemler vb.) dikkatlice çıkar. Analizin kısa, net ve bir lise öğrencisinin anlayacağı dilde olsun. Çözüme dair ipucu verme. Cevabını '### Analiz:' başlığı altında, **Verilenler:** ve **İstenenler:** etiketlerini markdown formatında kalın yazarak oluştur. Maddelerin başına '👉' emojisi koy. Analizin sonuna mutlaka şu cümleyi ekle: "Analiz tamamlandı. Çözümü görmek için 4. Adım: Çözüm butonuna tıklayabilirsin."`;
+                const prompt = `Sen bir ${selectedSubject} uzmanısın. Bu resimdeki ${selectedSubject} sorusunu analiz et. Özellikle şekilli veya grafikli sorularda, önce görseldeki tüm verileri (noktalar, açılar, uzunluklar, denklemler vb.) dikkatlice çıkar. Analizin kısa, net ve bir lise öğrencisinin anlayacağı dilde olsun. Çözüme dair ipucu verme. Cevabını '### Analiz:' başlığı altında, **Verilenler:** ve **İstenenler:** etiketlerini markdown formatında kalın yazarak oluştur. Maddelerin başına '👉' emojisi koy. **TÜM** matematiksel ifadeleri, sayıları, değişkenleri ve sembolleri istisnasız bir şekilde tek dolar '$...$' veya çift dolar '$$...$$' arasına al. Analizin sonuna mutlaka şu cümleyi ekle: "Analiz tamamlandı. Çözümü görmek için 4. Adım: Çözüm butonuna tıklayabilirsin."`;
                 const analysisResult = await callGeminiAPI(prompt);
                 if (analysisResult) { 
                     setAnalysis(analysisResult.replace(/### Analiz:/g, '').trim()); 
@@ -255,14 +255,14 @@
                 setStage('solving');
                 setLoadingMessage(isReSolve ? 'Yeniden çözülüyor...' : 'Çözüm oluşturuluyor...');
                 let prompt = `Sen, YKS ve lise müfredatına yüzde yüz hakim, konuların inceliklerini bilen (örneğin türevde çift katlı kökün ekstremum olmaması gibi) eşi benzeri olmayan bir ${selectedSubject} öğretmenisin. Bu resimdeki soruyu çöz.
-**ÖNCELİK 1: Soruyu Basitleştirme.** Eğer soru uzun bir metin içeriyorsa, önce '### Soruyu Basitleştirelim:' başlığı altında sorunun özünü, öğrencinin anlayacağı şekilde yeniden yaz. Soru zaten matematiksel ve net ise bu adımı atla.
+**ÖNCELİK 1: Soruyu Basitleştirme.** Eğer soru uzun bir metin içeriyorsa, önce '### Soruyu Basitleştirelim:' başlığı altında sorunun özünü, öğrencinin anlayacağı şekilde yeniden yaz.
 **ÖNCELİK 2: Çözüm.**
 **Kesin Kurallar:**
 1.  **En Pratik Yol:** Soruyu çözmek için lise öğrencisi seviyesine en uygun, en pratik ve en kolay anlaşılır yöntemi seç.
 2.  **Doğruluk:** Çözümün kesinlikle doğru olsun.
 3.  **Anlaşılırlık:** Çözümü adım adım, kısa ve net bir şekilde açıkla. Gereksiz yere uzatma.
 4.  **Format:** Cevabını iki bölümde ver:
-    * '### Çözüm:' başlığı altında metin çözümünü yaz. Tüm matematiksel ifadeleri '$...$' veya '$$...$$' arasına al.
+    * '### Çözüm:' başlığı altında metin çözümünü yaz. **TÜM** matematiksel ifadeleri, sayıları, değişkenleri ve sembolleri (örneğin $f'(x)$, $1 \\neq -1$, $x=5$) istisnasız bir şekilde tek dolar '$...$' veya çift dolar '$$...$$' arasına al. Bu kuralın hiçbir istisnası yoktur.
     * '### Tavsiyeler:' başlığı altında, bu soruyla ilgili 2-3 madde halinde, samimi bir öğretmen gibi, öğrencinin gelecekte benzer soruları çözmesine yardımcı olacak tavsiyeler ver. Tavsiyelerdeki maddelerin başına '💡' emojisi koy.`;
 
                 if(isReSolve) {
@@ -348,7 +348,7 @@
                             <div className="mt-6 p-4 bg-purple-100 border border-purple-200 rounded-lg text-center">
                                 <h3 className="font-semibold text-purple-800 mb-3">Çözümü Değerlendir</h3>
                                 <div className="flex justify-center gap-4">
-                                    <button onClick={() => { setFeedbackMessage("Geri bildiriminiz için teşekkürler! Bu çözüm gelecekteki yanıtlara referans olacaktır."); setShowFeedback(false); setTimeout(() => setFeedbackMessage(''), 3000); }} className="flex items-center gap-2 bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition">
+                                    <button onClick={() => { setFeedbackMessage("Geri bildiriminiz için teşekkürler!"); setShowFeedback(false); setTimeout(() => setFeedbackMessage(''), 3000); }} className="flex items-center gap-2 bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition">
                                         <span>👍</span> Beğendim
                                     </button>
                                     <button onClick={() => { setShowFeedback(false); setShowReSolvePrompt(true); }} className="flex items-center gap-2 bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition">
