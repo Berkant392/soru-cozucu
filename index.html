@@ -3,439 +3,1253 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Soru Çözücü</title>
+    <title>Gemini AI Kripto Sinyal Asistanı v2.5 (Gelişmiş Sürüm)</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" xintegrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
-    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" xintegrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
-    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+    
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f7fafc;
+        body { font-family: 'Inter', sans-serif; background-color: #0d1117; color: #c9d1d9; }
+        .glass-effect { background: rgba(22, 27, 34, 0.6); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(48, 54, 61, 0.5); }
+        .signal-card { transition: all 0.3s ease; border-left-width: 4px; }
+        .signal-card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.2); }
+        .blinking { animation: blink 1.5s linear infinite; }
+        @keyframes blink { 50% { opacity: 0.4; } }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #161b22; }
+        ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #485058; }
+        .status-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+
+        /* Terminal Stilleri */
+        #ai-terminal {
+            font-family: 'Roboto Mono', monospace;
+            position: fixed;
+            bottom: 1rem;
+            right: 1rem;
+            width: 380px;
+            max-width: 90vw;
+            background-color: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 0.75rem;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            color: #c9d1d9;
+            z-index: 100;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
         }
-        .rainbow-active {
+        .terminal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.5rem 0.75rem;
+            background-color: #21262d;
+            border-bottom: 1px solid #30363d;
+        }
+        .terminal-header .dots { display: flex; gap: 0.5rem; }
+        .terminal-header .dot { width: 12px; height: 12px; border-radius: 50%; }
+        .terminal-header .dot-red { background-color: #ff5f56; }
+        .terminal-header .dot-yellow { background-color: #ffbd2e; }
+        .terminal-header .dot-green { background-color: #27c93f; }
+        .terminal-header .title { font-weight: 500; color: #f0f6fc; font-size: 0.9rem; }
+        .terminal-header .status { display: flex; align-items: center; gap: 0.5rem; font-size: 0.8rem; color: #27c93f; }
+        .terminal-header .status-indicator { width: 8px; height: 8px; background-color: #27c93f; border-radius: 50%; animation: blink 1.5s linear infinite; }
+        .terminal-body { padding: 0.75rem; height: 120px; overflow-y: auto; font-size: 0.8rem; }
+        .terminal-body p { margin-bottom: 0.5rem; display: flex; align-items: flex-start; }
+        .terminal-body p .icon { margin-right: 0.5rem; margin-top: 2px; }
+        .terminal-body .log-info { color: #58a6ff; }
+        .terminal-body .log-success { color: #3fb950; }
+        .terminal-body .log-scan { color: #a371f7; }
+        .terminal-body .log-error { color: #f85149; }
+        .terminal-progress-bar {
+            width: calc(100% - 1.5rem);
+            margin: 0 0.75rem 0.75rem 0.75rem;
+            height: 18px;
+            background-color: #0d1117;
+            border-radius: 0.375rem;
+            overflow: hidden;
+            border: 1px solid #30363d;
+        }
+        .terminal-progress {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(90deg, #27c93f, #3fb950);
+            transition: width 0.5s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            font-weight: bold;
+            color: #ffffff;
+        }
+        /* Dinamik Fiyat Çubuğu Stilleri */
+        .price-progress-bar {
+            background: linear-gradient(to right, #ef4444, #f59e0b, #84cc16);
+            border-radius: 0.25rem;
+            height: 8px;
             position: relative;
-            z-index: 1;
-            background: #1a202c;
-            color: white;
-            border: 2px solid transparent;
+            margin-top: 4px;
         }
-        .rainbow-active::before {
-            content: '';
+        .price-indicator {
             position: absolute;
-            top: -2px; left: -2px;
-            right: -2px; bottom: -2px;
-            background: linear-gradient(90deg, #ff0000, #ffff00, #00ff00, #00ffff, #0000ff, #ff00ff, #ff0000);
-            background-size: 400%;
-            border-radius: 0.5rem;
-            z-index: -1;
-            animation: rainbow-move 3s linear infinite;
-        }
-        @keyframes rainbow-move {
-            0% { background-position: 0% 50%; }
-            100% { background-position: 100% 50%; }
-        }
-        .inline-math {
-            display: inline-block;
-            background-color: #eef2ff;
-            padding: 2px 8px;
-            border-radius: 6px;
-            margin: 0 4px;
-            border: 1px solid #c7d2fe;
-            vertical-align: baseline;
-        }
-        .loader {
-            border: 5px solid #f3f3f3;
-            border-top: 5px solid #3498db;
-            border-radius: 50%;
-            width: 50px;
-            height: 50px;
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        .halkali-title {
-            animation: text-color-change 6s linear infinite;
-        }
-        @keyframes text-color-change {
-            0%   {color: #4f46e5;}
-            25%  {color: #d946ef;}
-            50%  {color: #14b8a6;}
-            75%  {color: #f97316;}
-            100% {color: #4f46e5;}
+            top: -2px;
+            width: 4px;
+            height: 12px;
+            background-color: #ffffff;
+            border-radius: 2px;
+            transform: translateX(-50%);
+            transition: left 0.5s ease;
+            box-shadow: 0 0 5px rgba(255, 255, 255, 0.7);
         }
     </style>
 </head>
-<body>
-    <div id="root"></div>
-
-    <script type="text/babel">
-        const { useState, useRef, useEffect } = React;
-        const { createRoot } = ReactDOM;
-
-        // --- GÜVENLİ KULLANICI VERİTABANI ---
-        const credentials = new Map([
-            ['7gT3jP', 'kLp9aV'], ['aBv4kS', '8rZ2mN'], ['cD9xWq', '5jH7fE'], ['eF6zYp', '2bC3dR'], ['gH1vUo', '9sX8wT'],
-            ['iJ5tRn', '4mK1qL'], ['lM2sQp', '7nB6vC'], ['nP8rVo', '3dF4zG'], ['qR4tYn', '1hJ5kM'], ['sT9wXu', '6pL2sB'],
-            ['uV7zYo', '8cE3vD'], ['wX3vUp', '5gH1rF'], ['yZ1tRn', '2jK6qL'], ['A2bC3d', '9mN4sV'], ['B5dE6f', '4pG8wT'],
-            ['C8fG9h', '1rJ2uY'], ['D1hI2j', '7tL5xP'], ['E4jK5l', '3vN8zQ'], ['F7lM8n', '6sB1cF'], ['G9nO1p', '8wD4gH'],
-            ['H3pQ4r', '5uF7jK'], ['I6rS7t', '2xL9mN'], ['J9tU1v', '9vC2sB'], ['K2vW3x', '4gH5wT'], ['L5xY6z', '1jK8rF'],
-            ['M8z1A2', '7mN3qL'], ['N1B4C5', '3pG6vC'], ['O4D7E8', '6sB9zQ'], ['P7F9G1', '8wD2cF'], ['Q9H2I3', '5uF4gH'],
-            ['R3J5K6', '2xL7jK'], ['S6L8M9', '9vC1mN'], ['T9N1O2', '4gH3sB'], ['U2P4Q5', '1jK6wT'], ['V5R7S8', '7mN8rF'],
-            ['W8T9U1', '3pG2qL'], ['X1V3W4', '6sB5vC'], ['Y4Z6A7', '8wD8zQ'], ['Z7B9C1', '5uF1cF'], ['a3d6f8', '2xL3gH'],
-            ['b6g9h1', '9vC5jK'], ['c9j2k4', '4gH7mN'], ['d2l5m7', '1jK9sB'], ['e5n8p1', '7mN2wT'], ['f8q1r3', '3pG4rF'],
-            ['g1s4t6', '6sB7qL'], ['h4u7v9', '8wD9vC'], ['i7x1y2', '5uF2zQ'], ['j9z3a5', '2xL4cF'], ['k3b6c8', '9vC6gH'],
-            ['l6d9e1', '4gH8jK'], ['m9f2g4', '1jK1mN'], ['n2h5i7', '7mN3sB'], ['o5j8k1', '3pG5wT'], ['p8l1m3', '6sB7rF'],
-            ['q1n4o6', '8wD9qL'], ['r4p7q9', '5uF2vC'], ['s7r1s2', '2xL4zQ'], ['t9t4u5', '9vC6cF'], ['u3v7w8', '4gH8gH'],
-            ['v6x9y1', '1jK1jK'], ['w9z2a3', '7mN3mN'], ['x2b5c6', '3pG5sB'], ['y5d8e9', '6sB7wT'], ['z8f1g2', '8wD9rF'],
-            ['A1B2C3', '5uF2qL'], ['D4E5F6', '2xL4vC'], ['G7H8I9', '9vC6zQ'], ['J1K2L3', '4gH8cF'], ['M4N5O6', '1jK1gH'],
-            ['P7Q8R9', '7mN3jK'], ['S1T2U3', '3pG5mN'], ['V4W5X6', '6sB7sB'], ['Y7Z8A9', '8wD9wT'], ['B1C2D3', '5uF2rF'],
-            ['E4F5G6', '2xL4qL'], ['H7I8J9', '9vC6vC'], ['K1L2M3', '4gH8zQ'], ['N4O5P6', '1jK1cF'], ['Q7R8S9', '7mN3gH'],
-            ['T1U2V3', '3pG5jK'], ['W4X5Y6', '6sB7mN'], ['Z7A8B9', '8wD9sB'], ['c1d2e3', '5uF2wT'], ['f4g5h6', '2xL4rF'],
-            ['i7j8k9', '9vC6qL'], ['l1m2n3', '4gH8vC'], ['o4p5q6', '1jK1zQ'], ['r7s8t9', '7mN3cF'], ['u1v2w3', '3pG5gH'],
-            ['x4y5z6', '6sB7jK'], ['a7b8c9', '8wD9mN'], ['d1e2f3', '5uF2sB'], ['g4h5i6', '2xL4wT'], ['j7k8l9', '9vC6rF'],
-            ['m1n2o3', '4gH8qL'], ['p4q5r6', '1jK1vC'], ['s7t8u9', '7mN3zQ'], ['v1w2x3', '3pG5cF'], ['y4z5a6', '6sB7gH'],
-            ['b7c8d9', '8wD9jK'], ['e1f2g3', '5uF2mN'], ['h4i5j6', '2xL4sB'], ['k7l8m9', '9vC6wT'], ['n1o2p3', '4gH8rF'],
-            ['q4r5s6', '1jK1qL'], ['t7u8v9', '7mN3vC'], ['w1x2y3', '3pG5zQ'], ['z4a5b6', '6sB7cF'], ['c7d8e9', '8wD9gH'],
-            ['f1g2h3', '5uF2jK'], ['i4j5k6', '2xL4mN'], ['l7m8n9', '9vC6sB'], ['o1p2q3', '4gH8wT'], ['r4s5t6', '1jK1rF'],
-            ['u7v8w9', '7mN3qL'], ['x1y2z3', '3pG5vC'], ['a4b5c6', '6sB7zQ'], ['d7e8f9', '8wD9cF'], ['g1h2i3', '5uF2gH'],
-            ['j4k5l6', '2xL4jK'], ['m7n8o9', '9vC6mN'], ['p1q2r3', '4gH8sB'], ['s4t5u6', '1jK1wT'], ['v7w8x9', '7mN3rF'],
-            ['y1z2a3', '3pG5qL'], ['b4c5d6', '6sB7vC'], ['e7f8g9', '8wD9zQ'], ['h1i2j3', '5uF2cF'], ['k4l5m6', '2xL4gH'],
-            ['n7o8p9', '9vC6jK'], ['q1r2s3', '4gH8mN'], ['t4u5v6', '1jK1sB'], ['w7x8y9', '7mN3wT'], ['z1a2b3', '3pG5rF'],
-            ['c4d5e6', '6sB7qL'], ['f7g8h9', '8wD9vC'], ['i1j2k3', '5uF2zQ'], ['l4m5n6', '2xL4cF'], ['o7p8q9', '9vC6gH'],
-            ['r1s2t3', '4gH8jK'], ['u4v5w6', '1jK1mN'], ['x7y8z9', '7mN3sB'], ['a1b3c5', '3pG5wT'], ['d4e6f8', '6sB7rF'],
-            ['g7h9i1', '8wD9qL'], ['j2k4l6', '5uF2vC'], ['m5n7o9', '2xL4zQ'], ['p8q1r2', '9vC6cF'], ['s3t5u7', '4gH8gH'],
-            ['v9w1x3', '1jK1jK'], ['y5z7a9', '7mN3mN'], ['b2c4d6', '3pG5sB'], ['e8f1g3', '6sB7wT'], ['h5i7j9', '8wD9rF'],
-            ['k2l4m6', '5uF2qL'], ['n8o1p3', '2xL4vC'], ['q5r7s9', '9vC6zQ'], ['t2u4v6', '4gH8cF'], ['w8x1y3', '1jK1gH'],
-            ['z5a7b9', '7mN3jK'], ['c2d4e6', '3pG5mN'], ['f8g1h3', '6sB7sB'], ['i5j7k9', '8wD9wT'], ['l2m4n6', '5uF2rF'],
-            ['o8p1q3', '2xL4qL'], ['r5s7t9', '9vC6vC'], ['u2v4w6', '4gH8zQ'], ['x8y1z3', '1jK1cF'], ['a5b7c9', '7mN3gH'],
-            ['d2e4f6', '3pG5jK'], ['g8h1i3', '6sB7mN'], ['j5k7l9', '8wD9sB'], ['m2n4o6', '5uF2wT'], ['p8q1r3', '2xL4rF'],
-            ['s5t7u9', '9vC6qL'], ['v2w4x6', '4gH8vC'], ['y8z1a3', '1jK1zQ'], ['b5c7d9', '7mN3cF'], ['e2f4g6', '3pG5gH'],
-            ['h8i1j3', '6sB7jK'], ['k5l7m9', '8wD9mN'], ['n2o4p6', '5uF2sB'], ['q8r1s3', '2xL4wT'], ['t5u7v9', '9vC6rF'],
-            ['w2x4y6', '4gH8qL'], ['z8a1b3', '1jK1vC'], ['c5d7e9', '7mN3zQ'], ['f2g4h6', '3pG5cF'], ['i8j1k3', '6sB7gH'],
-            ['l5m7n9', '8wD9jK'], ['o2p4q6', '5uF2mN'], ['r8s1t3', '2xL4sB'], ['u5v7w9', '9vC6wT'], ['x2y4z6', '4gH8rF'],
-            ['a8b1c3', '1jK1qL'], ['d5e7f9', '7mN3vC'], ['g2h4i6', '3pG5zQ'], ['j8k1l3', '6sB7cF'], ['m5n7o9', '8wD9gH'],
-            ['p2q4r6', '5uF2jK'], ['s8t1u3', '2xL4mN'], ['v5w7x9', '9vC6sB'], ['y2z4a6', '4gH8wT'], ['b8c1d3', '1jK1rF'],
-            ['e5f7g9', '7mN3qL'], ['h2i4j6', '3pG5vC'], ['k8l1m3', '6sB7zQ'], ['n5o7p9', '8wD9cF'], ['q2r4s6', '5uF2gH'],
-            ['t8u1v3', '2xL4jK'], ['w5x7y9', '9vC6mN'], ['z2a4b6', '4gH8sB'], ['c8d1e3', '1jK1wT'], ['f5g7h9', '7mN3rF'],
-            ['i2j4k6', '3pG5qL'], ['l8m1n3', '6sB7vC'], ['o5p7q9', '8wD9zQ'], ['r2s4t6', '5uF2cF'], ['u8v1w3', '2xL4gH'],
-            ['x5y7z9', '9vC6jK'], ['Zq4w7e', '8r2t5y'], ['Xp1o9i', 'u6i3o1'], ['Cb5n8m', 'k2j4h6'], ['Vg9f2d', 's5a7z1'],
-            ['Bn4m7k', 'j8h6g5'], ['Lk1j8h', 'g2f4d6'], ['Pq5r8t', 'y1u3i5'], ['Oa2s5d', 'f7g9h2'], ['Iu6y9t', 'r4e1w3'],
-            ['Uj3m7k', 'l9o1p4'], ['Yt5r2e', 'w6q8a1'], ['Ts1a4z', 'e5d7c9'], ['Rg9f6c', 'v3b5n8'], ['Fv2b5n', 'm1k3j6'],
-            ['Dc4r7f', 't8g2y5'], ['Sw6a9q', 'z1x3c5'], ['Az8s5x', 'd2f4g7']
-        ]);
-        // --- BİTİŞ ---
-
-        const UniversalMathRenderer = ({ text }) => {
-            const containerRef = useRef(null);
-            useEffect(() => {
-                if (containerRef.current && text && typeof katex !== 'undefined') {
-                    const contentContainer = document.createElement('div');
-                    const lines = text.split('\n').filter(line => line.trim() !== '');
-                    lines.forEach(line => {
-                        const p = document.createElement('p');
-                        p.className = 'mb-2 text-gray-700 leading-relaxed flex items-baseline flex-wrap';
-
-                        const parts = line.split(/(\*\*.*?\*\*|\$\$[\s\S]*?\$\$|\$[\s\S]*?\$)/g).filter(Boolean);
-
-                        parts.forEach(part => {
-                            if (part.startsWith('**') && part.endsWith('**')) {
-                                const strong = document.createElement('strong');
-                                strong.className = 'font-bold text-gray-900 mr-2';
-                                strong.textContent = part.slice(2, -2);
-                                p.appendChild(strong);
-                            } else if ((part.startsWith('$$') && part.endsWith('$$')) || (part.startsWith('$') && part.endsWith('$'))) {
-                                const isBlock = part.startsWith('$$');
-                                const mathContent = part.slice(isBlock ? 2 : 1, isBlock ? -2 : -1);
-                                const span = document.createElement('span');
-                                span.className = 'inline-math';
-                                try {
-                                    katex.render(mathContent, span, { throwOnError: false, displayMode: false });
-                                } catch (e) {
-                                    span.textContent = part;
-                                }
-                                p.appendChild(span);
-                            } else {
-                                p.appendChild(document.createTextNode(part));
-                            }
-                        });
-                        contentContainer.appendChild(p);
-                    });
-                    
-                    containerRef.current.innerHTML = '';
-                    containerRef.current.appendChild(contentContainer);
-                }
-            }, [text]);
-            return <div ref={containerRef}></div>;
-        };
-        
-        const SoruCozucuPage = () => {
-            const [image, setImage] = useState(null);
-            const [imageBase64, setImageBase64] = useState('');
-            const [selectedSubject, setSelectedSubject] = useState(null);
-            const [analysis, setAnalysis] = useState('');
-            const [simplifiedQuestion, setSimplifiedQuestion] = useState('');
-            const [solution, setSolution] = useState('');
-            const [recommendations, setRecommendations] = useState('');
-            const [isLoading, setIsLoading] = useState(false);
-            const [loadingMessage, setLoadingMessage] = useState('');
-            const [error, setError] = useState('');
-            const [stage, setStage] = useState('upload'); 
-            const [showFeedback, setShowFeedback] = useState(false);
-            const [showReSolvePrompt, setShowReSolvePrompt] = useState(false);
-            const [feedbackMessage, setFeedbackMessage] = useState('');
-            const fileInputRef = useRef(null);
-
-            const subjects = ['Matematik', 'Fizik', 'Kimya', 'Biyoloji', 'Tarih', 'Coğrafya', 'Edebiyat', 'Türkçe'];
-
-            const handleFileChange = (event) => {
-                const file = event.target.files[0];
-                if (file) {
-                    setImage(URL.createObjectURL(file));
-                    setError(''); setAnalysis(''); setSolution(''); setSelectedSubject(null);
-                    setShowFeedback(false); setShowReSolvePrompt(false); setRecommendations(''); setSimplifiedQuestion('');
-                    setStage('image_uploaded');
-                    const reader = new FileReader();
-                    reader.onloadend = () => setImageBase64(reader.result.split(',')[1]);
-                    reader.onerror = () => setError('Dosya okunurken bir hata oluştu.');
-                    reader.readAsDataURL(file);
-                }
-            };
-
-            const triggerFileSelect = () => fileInputRef.current.click();
-
-            const callGeminiAPI = async (prompt) => {
-                if (!imageBase64) { setError('Lütfen önce bir resim dosyası seçin.'); return null; }
-                setIsLoading(true);
-                setError('');
-                const payload = { contents: [{ role: "user", parts: [ { text: prompt }, { inlineData: { mimeType: "image/jpeg", data: imageBase64 } } ] }] };
-                
-                const apiUrl = `/.netlify/functions/yapay-zeka`;
-
-                try {
-                    const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-                    if (!response.ok) {
-                         const errorText = await response.text();
-                         throw new Error(`API Sunucu Hatası: ${response.status} - ${errorText}`);
-                    }
-                    const result = await response.json();
-                    if (result.candidates && result.candidates[0]?.content?.parts?.[0]) return result.candidates[0].content.parts[0].text;
-                    const errorMessage = result.promptFeedback?.blockReason || JSON.stringify(result);
-                    throw new Error(`API'den geçerli bir yanıt alınamadı: ${errorMessage}`);
-                } catch (err) {
-                    setError(err.message || 'Bilinmeyen bir hata oluştu.');
-                    return null;
-                } finally {
-                    setIsLoading(false);
-                    setLoadingMessage('');
-                }
-            };
-
-            const handleAnalysis = async () => {
-                if(!selectedSubject) { setError('Lütfen önce bir ders seçin.'); return; }
-                setStage('analyzing');
-                setLoadingMessage('Analiz ediliyor...');
-                const prompt = `Sen bir ${selectedSubject} uzmanısın. Bu resimdeki ${selectedSubject} sorusunu analiz et. Özellikle şekilli veya grafikli sorularda, önce görseldeki tüm verileri (noktalar, açılar, uzunluklar, denklemler vb.) dikkatlice çıkar. Analizin kısa, net ve bir lise öğrencisinin anlayacağı dilde olsun. Çözüme dair ipucu verme. Cevabını '### Analiz:' başlığı altında, **Verilenler:** ve **İstenenler:** etiketlerini markdown formatında kalın yazarak oluştur. Maddelerin başına '👉' emojisi koy. **TÜM** matematiksel ifadeleri, sayıları, değişkenleri ve sembolleri istisnasız bir şekilde tek dolar '$...$' veya çift dolar '$$...$$' arasına al. Analizin sonuna mutlaka şu cümleyi ekle: "Analiz tamamlandı. Çözümü görmek için 4. Adım: Çözüm butonuna tıklayabilirsin."`;
-                const analysisResult = await callGeminiAPI(prompt);
-                if (analysisResult) { 
-                    setAnalysis(analysisResult.replace(/### Analiz:/g, '').trim()); 
-                    setStage('analysis_done'); 
-                } else { 
-                    setStage('subject_selected'); 
-                }
-            };
-            
-            const handleSolution = async (isReSolve = false) => {
-                if(!selectedSubject) { setError('Lütfen önce bir ders seçin.'); return; }
-                setStage('solving');
-                setLoadingMessage(isReSolve ? 'Yeniden çözülüyor...' : 'Çözüm oluşturuluyor...');
-                let prompt = `Sen, YKS ve lise müfredatına yüzde yüz hakim, konuların inceliklerini bilen (örneğin türevde çift katlı kökün ekstremum olmaması gibi) eşi benzeri olmayan bir ${selectedSubject} öğretmenisin. Bu resimdeki soruyu çöz.
-**ÖNCELİK 1: Soruyu Basitleştirme.** Eğer soru uzun bir metin içeriyorsa, önce '### Soruyu Basitleştirelim:' başlığı altında sorunun özünü, öğrencinin anlayacağı şekilde yeniden yaz.
-**ÖNCELİK 2: Çözüm.**
-**Kesin Kurallar:**
-1.  **En Pratik Yol:** Soruyu çözmek için lise öğrencisi seviyesine en uygun, en pratik ve en kolay anlaşılır yöntemi seç.
-2.  **Doğruluk:** Çözümün kesinlikle doğru olsun.
-3.  **Anlaşılırlık:** Çözümü adım adım, kısa ve net bir şekilde açıkla. Gereksiz yere uzatma.
-4.  **Format:** Cevabını iki bölümde ver:
-    * '### Çözüm:' başlığı altında metin çözümünü yaz. **TÜM** matematiksel ifadeleri, sayıları, değişkenleri ve sembolleri (örneğin $f'(x)$, $1 \\neq -1$, $x=5$) istisnasız bir şekilde tek dolar '$...$' veya çift dolar '$$...$$' arasına al. Bu kuralın hiçbir istisnası yoktur.
-    * '### Tavsiyeler:' başlığı altında, bu soruyla ilgili 2-3 madde halinde, samimi bir öğretmen gibi, öğrencinin gelecekte benzer soruları çözmesine yardımcı olacak tavsiyeler ver. Tavsiyelerdeki maddelerin başına '💡' emojisi koy.`;
-
-                if(isReSolve) {
-                    prompt = `Daha önceki çözümüm hatalı veya eksik olarak işaretlendi. Az önce yaptığım detaylı analizi dikkate alarak, bu resimdeki ${selectedSubject} sorusunu **önceki hatamı tekrarlamayacak şekilde, çok daha dikkatli, anlaşılır ve basite indirgeyerek** yeniden çöz. Adımları net bir şekilde açıkla ve doğru sonuca ulaş.` + prompt;
-                }
-                
-                const resultText = await callGeminiAPI(prompt);
-                
-                if (resultText) {
-                    const simplifiedPart = resultText.split('### Çözüm:')[0];
-                    const solutionAndRest = resultText.split('### Çözüm:')[1] || '';
-                    
-                    if(simplifiedPart.includes('### Soruyu Basitleştirelim:')){
-                        setSimplifiedQuestion(simplifiedPart.replace('### Soruyu Basitleştirelim:', '').trim());
-                    } else {
-                        setSimplifiedQuestion('');
-                    }
-
-                    const solutionParts = solutionAndRest.split('### Tavsiyeler:');
-                    setSolution(solutionParts[0].trim());
-                    if (solutionParts.length > 1) {
-                        setRecommendations(solutionParts[1].trim());
-                    }
-                    setStage('solution_done'); 
-                    setShowFeedback(true);
-                } else { 
-                    setStage('analysis_done'); 
-                }
-            };
-            
-            const handleReSolve = async () => {
-                setShowReSolvePrompt(false);
-                setSolution('');
-                setRecommendations('');
-                setAnalysis('');
-                setSimplifiedQuestion('');
-                setLoadingMessage('Hata anlaşılıyor, yeniden ve daha detaylı analiz ediliyor...');
-                const reAnalysisPrompt = `Sen bir ${selectedSubject} uzmanısın ve bir önceki çözümün hatalı olarak işaretlendi. Bu resimdeki soruyu şimdi **çok daha dikkatli ve detaylı bir şekilde** yeniden analiz et. Soruda verilen tüm bilgileri, sayısal değerleri, birimleri ve koşulları atlamadan, açık ve net bir şekilde listele. Özellikle şekilli sorularda, şekildeki tüm detayları (açılar, uzunluklar, noktalar) dikkate al. Sorunun tam olarak ne istediğini belirt. **KESİNLİKLE çözüm yapma.** Cevabını '### Analiz:' başlığı altında sun.`;
-                const analysisResult = await callGeminiAPI(reAnalysisPrompt);
-
-                if (analysisResult) {
-                    setAnalysis(analysisResult.replace(/### Analiz:/g, '').trim());
-                    await handleSolution(true);
-                } else {
-                    setError("Yeniden analiz sırasında bir hata oluştu.");
-                    setStage('subject_selected');
-                }
-            };
-            
-            const resetApp = () => {
-                setImage(null); setImageBase64(''); setAnalysis(''); setSolution('');
-                setError(''); setStage('upload'); setSelectedSubject(null);
-                setShowFeedback(false); setShowReSolvePrompt(false); setRecommendations(''); setSimplifiedQuestion('');
-                if(fileInputRef.current) fileInputRef.current.value = "";
-            };
-
-            return (
-                <div className="w-full max-w-4xl mx-auto bg-white rounded-2xl shadow-xl p-4 sm:p-6 md:p-8">
-                    <header className="text-center mb-6">
-                        <p className="halkali-title text-lg font-semibold mb-2">Halkalı Fen Bilimleri Merkezi</p>
-                        <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-pink-500 to-red-500">Soru Çözücü</h1>
-                        <p className="text-base font-semibold bg-gradient-to-r from-blue-500 to-purple-600 bg-clip-text text-transparent mt-2">Berkant Hoca</p>
-                        <p className="text-gray-600 mt-4 text-sm sm:text-base">Sorunun fotoğrafını yükle, dersini seç ve çözümü gör!</p>
-                    </header>
-                    {error && <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative mb-4" role="alert">{error}</div>}
-                    <div className="flex flex-col gap-6">
-                        <div className="flex flex-col md:flex-row gap-4 md:gap-6 items-start">
-                            <div className="w-full md:w-1/2 flex flex-col items-center justify-center bg-gray-50 p-4 sm:p-6 rounded-lg border-2 border-dashed h-full">
-                                <input type="file" accept="image/*" onChange={handleFileChange} ref={fileInputRef} className="hidden" />
-                                {image ? (<img src={image} alt="Yüklenen Soru" className="max-w-full max-h-48 sm:max-h-60 mx-auto rounded-lg shadow-md" />) : (<div className="text-center py-8 cursor-pointer w-full" onClick={triggerFileSelect}><svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48" aria-hidden="true"><path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg><p className="mt-2 text-sm font-medium text-gray-700">1. Adım: Fotoğraf Yükle</p></div>)}
-                            </div>
-                            <div className="w-full md:w-1/2 flex flex-col justify-center space-y-3">
-                                 {image && <button onClick={resetApp} className="w-full bg-red-500 text-white font-semibold py-3 px-4 rounded-lg hover:bg-red-600 transition duration-300">Yeni Soru Yükle</button>}
-                                <button onClick={handleAnalysis} disabled={isLoading || !selectedSubject} className="w-full bg-green-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-green-600 transition duration-300 disabled:bg-gray-400 disabled:cursor-not-allowed">3. Adım: Analiz</button>
-                                <button onClick={() => handleSolution(false)} disabled={isLoading || stage !== 'analysis_done'} className="w-full bg-purple-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-purple-600 transition duration-300 disabled:bg-gray-400 disabled:cursor-not-allowed">4. Adım: Çözüm</button>
-                                {isLoading && <div className="mt-4 flex flex-col items-center justify-center"><div className="loader"></div><p className="text-gray-600 mt-2">{loadingMessage}</p></div>}
-                            </div>
-                        </div>
-                        {image && (<div className="w-full pt-4 border-t"><h2 className="text-lg font-semibold text-center text-gray-700 mb-3">2. Adım: Dersi Seç</h2><div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">{subjects.map(subject => (<button key={subject} onClick={() => setSelectedSubject(subject)} className={`py-2 px-3 rounded-lg font-semibold transition-all duration-200 text-sm sm:text-base ${selectedSubject === subject ? 'rainbow-active' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}>{subject}</button>))}</div></div>)}
-                        {(analysis || solution) && (<div className="space-y-8 mt-6 pt-6 border-t">{analysis && (<div className="bg-blue-50 p-4 sm:p-5 rounded-lg shadow-sm border border-blue-200"><h2 className="text-lg sm:text-xl font-bold text-blue-800 mb-3">Analiz</h2><UniversalMathRenderer text={analysis} /></div>)}{simplifiedQuestion && (<div className="bg-yellow-50 p-4 sm:p-5 rounded-lg shadow-sm border border-yellow-200"><h2 className="text-lg sm:text-xl font-bold text-yellow-800 mb-3">Soruyu Basitleştirelim</h2><UniversalMathRenderer text={simplifiedQuestion} /></div>)}{solution && (<div><h2 className="text-xl sm:text-2xl font-bold text-indigo-800 mb-4 text-center">Çözüm</h2><UniversalMathRenderer text={solution} /></div>)}{recommendations && (<div className="mt-6"><h2 className="text-xl sm:text-2xl font-bold text-green-700 mb-4 text-center">💡 Sana Tavsiyeler</h2><div className="bg-green-100 p-4 sm:p-5 rounded-lg shadow-sm border border-green-300"><UniversalMathRenderer text={recommendations} /></div></div>)}</div>)}
-                        
-                        {showFeedback && (
-                            <div className="mt-6 p-4 bg-purple-100 border border-purple-200 rounded-lg text-center">
-                                <h3 className="font-semibold text-purple-800 mb-3">Çözümü Değerlendir</h3>
-                                <div className="flex justify-center gap-4">
-                                    <button onClick={() => { setFeedbackMessage("Geri bildiriminiz için teşekkürler!"); setShowFeedback(false); setTimeout(() => setFeedbackMessage(''), 3000); }} className="flex items-center gap-2 bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition">
-                                        <span>👍</span> Beğendim
-                                    </button>
-                                    <button onClick={() => { setShowFeedback(false); setShowReSolvePrompt(true); }} className="flex items-center gap-2 bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition">
-                                        <span>👎</span> Hatalı/Eksik
-                                    </button>
-                                </div>
-                            </div>
-                        )}
-                        {feedbackMessage && <div className="mt-4 p-3 text-center text-green-800 bg-green-100 rounded-lg">{feedbackMessage}</div>}
-                        {showReSolvePrompt && (
-                             <div className="mt-6 p-4 bg-yellow-100 border border-yellow-200 rounded-lg text-center">
-                                <p className="font-semibold text-yellow-800 mb-3">Geri bildiriminiz için teşekkürler, artık daha dikkatli olacağım. Soruyu daha dikkatli bir şekilde yeniden çözmemi ister misiniz?</p>
-                                <div className="flex justify-center gap-4">
-                                    <button onClick={handleReSolve} className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition">Evet, yeniden çöz</button>
-                                    <button onClick={() => setShowReSolvePrompt(false)} className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition">Hayır, teşekkürler</button>
-                                </div>
-                            </div>
-                        )}
+<body class="min-h-screen">
+    <div id="main-container" class="flex flex-col lg:flex-row h-screen max-h-screen p-4 gap-4">
+        <aside class="w-full lg:w-1/4 xl:w-1/5 flex flex-col glass-effect rounded-2xl p-4 space-y-4">
+            <div class="flex items-center justify-between"><h2 class="text-xl font-bold text-white">Piyasa</h2><div id="connection-status" class="flex items-center gap-2 text-xs"><div class="status-dot bg-yellow-400"></div><span>Bağlanıyor...</span></div></div>
+            <div class="relative"><input type="text" id="coin-search" placeholder="Coin Ara..." class="w-full bg-[#0d1117] border border-gray-700 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"></div>
+            <div id="coin-list" class="flex-grow overflow-y-auto pr-2"></div>
+        </aside>
+        <main class="w-full lg:w-3/4 xl:w-4/5 flex flex-col gap-4">
+            <header class="glass-effect rounded-2xl p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div><h1 class="text-3xl font-bold text-white">AI Trader Asistanı v2.5 (Gelişmiş)</h1><p class="text-gray-400">Tahminsel ve Adapte Olan Analiz</p></div>
+                <div id="stats-container" class="glass-effect rounded-lg p-4 w-full md:w-auto text-center">
+                    <h3 class="text-lg font-semibold text-white mb-2">Başarı İstatistiği</h3>
+                    <div class="flex justify-around gap-4 text-sm">
+                        <div><p class="text-gray-400">Toplam Sinyal</p><p id="total-signals" class="text-2xl font-bold text-white">0</p></div>
+                        <div><p class="text-gray-400">Başarılı</p><p id="successful-signals" class="text-2xl font-bold text-green-400">0</p></div>
+                        <div><p class="text-gray-400">Stop</p><p id="stopped-signals" class="text-2xl font-bold text-red-400">0</p></div>
+                        <div><p class="text-gray-400">Başarı %</p><p id="success-rate" class="text-2xl font-bold text-blue-400">N/A</p></div>
                     </div>
                 </div>
-            );
-        };
-        
-        const LoginPage = ({ onLoginSuccess }) => {
-            const [username, setUsername] = useState('');
-            const [password, setPassword] = useState('');
-            const [loginError, setLoginError] = useState('');
-
-            const handleLogin = (e) => {
-                e.preventDefault();
-                if (credentials.has(username) && credentials.get(username) === password) {
-                    onLoginSuccess();
-                } else {
-                    setLoginError('Kullanıcı adı veya şifre hatalı. Halkalı Fen Bilimleri Merkezi öğrencisi iseniz Berkant Hocadan kullanıcı adı ve şifre alabilirsiniz.');
-                }
-            };
-
-            return (
-                <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 px-4">
-                    <div className="w-full max-w-md bg-white p-8 rounded-2xl shadow-lg text-center">
-                        <h1 className="text-xl sm:text-2xl font-bold text-gray-800 mb-4">
-                            <span className="halkali-title block mb-1">Halkalı Fen Bilimleri Merkezi</span>
-                            <span>Soru Çözücü Uygulamasına Hoş Geldiniz</span>
-                        </h1>
-                        <p className="text-gray-600 mb-6">Lütfen giriş yapınız.</p>
-                        <form onSubmit={handleLogin} className="space-y-4">
-                            <input 
-                                type="text"
-                                placeholder="Kullanıcı Adı"
-                                value={username}
-                                onChange={(e) => setUsername(e.target.value)}
-                                className="w-full px-4 py-3 bg-purple-50 border border-purple-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-                            />
-                            <input 
-                                type="password"
-                                placeholder="Şifre"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                className="w-full px-4 py-3 bg-purple-50 border border-purple-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-                            />
-                            <button type="submit" className="w-full bg-indigo-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-indigo-700 transition duration-300">
-                                Giriş Yap
-                            </button>
-                        </form>
-                        {loginError && <p className="mt-4 text-sm text-red-600 bg-red-100 p-3 rounded-lg">{loginError}</p>}
-                    </div>
+            </header>
+            <div id="signals-grid" class="flex-grow overflow-y-auto p-2 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
+                 <div id="placeholder-card" class="flex flex-col items-center justify-center text-center text-gray-500 h-full col-span-full">
+                    <svg class="w-16 h-16 mb-4 animate-pulse" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 6.75h7.5M8.25 12h7.5m-7.5 5.25h7.5M3.75 6.75h.007v.008H3.75V6.75zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM3.75 12h.007v.008H3.75V12zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm-.375 5.25h.007v.008H3.75v-.008zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" /></svg>
+                    <p class="text-xl font-medium">Uygulama Başlatılıyor...</p>
                 </div>
-            );
-        };
+            </div>
+        </main>
+    </div>
+    <div id="details-modal" class="fixed inset-0 bg-black bg-opacity-70 backdrop-blur-sm flex items-center justify-center hidden z-50 p-4">
+        <div class="glass-effect rounded-2xl p-6 w-full max-w-2xl max-h-[80vh] flex flex-col">
+            <div class="flex justify-between items-center mb-4"><h3 id="modal-title" class="text-2xl font-bold text-white">Analiz Detayları</h3><button id="close-modal" class="text-gray-400 hover:text-white text-3xl leading-none">&times;</button></div>
+            <div id="modal-content" class="overflow-y-auto text-gray-300 space-y-4 pr-2"></div>
+        </div>
+    </div>
 
-        const App = () => {
-            const [isLoggedIn, setIsLoggedIn] = useState(false);
+    <!-- AI Terminali -->
+    <div id="ai-terminal">
+        <div class="terminal-header">
+            <div class="dots">
+                <div class="dot dot-red"></div>
+                <div class="dot dot-yellow"></div>
+                <div class="dot dot-green"></div>
+            </div>
+            <span class="title">AI Trader Terminal v2.5</span>
+            <div class="status">
+                <div class="status-indicator"></div>
+                <span>LIVE</span>
+            </div>
+        </div>
+        <div class="terminal-body" id="terminal-output"></div>
+        <div class="terminal-progress-bar">
+            <div class="terminal-progress" id="terminal-progress-indicator">0%</div>
+        </div>
+    </div>
 
-            if (!isLoggedIn) {
-                return <LoginPage onLoginSuccess={() => setIsLoggedIn(true)} />;
+    <div id="critical-error-overlay" class="fixed inset-0 bg-red-900 bg-opacity-95 flex-col text-white items-center justify-center hidden z-[100] p-8 text-center">
+        <h2 class="text-3xl font-bold mb-4">Kritik Hata: Kütüphane Başlatılamadı</h2>
+        <p class="mb-2 max-w-2xl">Uygulamanın çalışması için gerekli olan 'technicalindicators' kütüphanesi başlatılamadı. Gömülü kodda bir sorun olabilir.</p>
+    </div>
+    
+    <!-- Gömülü technicalindicators kütüphanesi (Gelişmiş ve Stabil Sürüm) -->
+    <script>
+        (function(global, factory) {
+            typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
+                typeof define === 'function' && define.amd ? define(['exports'], factory) :
+                (factory((global.technicalindicators = global.technicalindicators || {})));
+        }(this, (function(exports) {
+            'use strict';
+            class Indicator {
+                constructor() {
+                    this.result = [];
+                    this.format = (data) => {
+                        return data;
+                    };
+                }
+                static calculate(input) {
+                    console.error('The calculate method is not implemented');
+                    return;
+                }
+                getResult() {
+                    return this.result;
+                }
             }
 
-            return (
-                 <div className="min-h-screen bg-gray-50 flex items-center justify-center p-2 sm:p-4">
-                    <SoruCozucuPage />
-                 </div>
-            );
-        };
+            class MA extends Indicator {
+                constructor(input) {
+                    super(input);
+                    var period = input.period;
+                    var values = input.values;
+                    var result = new Array(values.length);
+                    this.result = result;
+                    this.generator = (function*() {
+                        var sum = 0;
+                        var period = yield;
+                        var price = yield;
+                        var data = new Array(period);
+                        var i = 0;
+                        var result;
+                        while (true) {
+                            if (i < period) {
+                                data[i] = price;
+                                sum = sum + price;
+                                result = undefined;
+                            } else {
+                                sum = sum - data[i % period] + price;
+                                result = sum / period;
+                            }
+                            i++;
+                            data[i % period] = price;
+                            price = yield result;
+                        }
+                    })();
+                    this.generator.next();
+                    this.generator.next(period);
+                    values.forEach((tick, index) => {
+                        var result = this.generator.next(tick);
+                        if (result.value != undefined) {
+                            this.result[index] = this.format(result.value);
+                        }
+                    });
+                }
+                nextValue(price) {
+                    var result = this.generator.next(price).value;
+                    if (result != undefined)
+                        return this.format(result);
+                }
+            }
 
-        const container = document.getElementById('root');
-        const root = createRoot(container);
-        root.render(<App />);
+            class SMA extends MA {
+                constructor(input) {
+                    super(input);
+                }
+                static calculate(input) {
+                    var period = input.period;
+                    var values = input.values;
+                    var sma = new SMA({
+                        period: period,
+                        values: []
+                    });
+                    var results = [];
+                    values.forEach(price => {
+                        var result = sma.nextValue(price);
+                        if(result !== undefined) results.push(result);
+                    });
+                    return results;
+                }
+            }
+
+            class EMA extends Indicator {
+                constructor(input) {
+                    super(input);
+                    var period = input.period;
+                    var values = input.values;
+                    var k = 2 / (period + 1);
+                    this.result = [];
+                    this.generator = (function*() {
+                        var last_ema;
+                        var tick = yield;
+                        var ma = new SMA({
+                            period: period,
+                            values: []
+                        });
+                        while (tick != undefined) {
+                            var next_value = ma.nextValue(tick);
+                            if (next_value != undefined) {
+                                last_ema = next_value;
+                                break;
+                            }
+                            tick = yield;
+                        }
+                        tick = yield last_ema;
+                        while (true) {
+                            last_ema = (tick - last_ema) * k + last_ema;
+                            tick = yield last_ema;
+                        }
+                    })();
+                    this.generator.next();
+                    values.forEach((tick) => {
+                        var result = this.generator.next(tick);
+                        if (result.value != undefined) {
+                            this.result.push(this.format(result.value));
+                        }
+                    });
+                }
+                nextValue(price) {
+                    var result = this.generator.next(price).value;
+                    if (result != undefined) {
+                        return this.format(result);
+                    }
+                }
+                static calculate(input) {
+                     return new EMA(input).getResult();
+                }
+            }
+            
+            class MACD extends Indicator {
+                constructor(input) {
+                    super();
+                    var fastMAProducer = input.SimpleMAOscillator === false ? EMA : SMA;
+                    var slowMAProducer = input.SimpleMAOscillator === false ? EMA : SMA;
+                    var signalMAProducer = input.SimpleMASignal === false ? EMA : SMA;
+                    var fastPeriod = input.fastPeriod;
+                    var slowPeriod = input.slowPeriod;
+                    var signalPeriod = input.signalPeriod;
+                    var values = input.values;
+                    var fastMA = new fastMAProducer({
+                        period: fastPeriod,
+                        values: []
+                    });
+                    var slowMA = new slowMAProducer({
+                        period: slowPeriod,
+                        values: []
+                    });
+                    var signalMA = new signalMAProducer({
+                        period: signalPeriod,
+                        values: []
+                    });
+                    this.result = [];
+                    this.generator = (function*() {
+                        var result;
+                        var tick = yield;
+                        var macd, signal, histogram;
+                        while (true) {
+                            var fast = fastMA.nextValue(tick);
+                            var slow = slowMA.nextValue(tick);
+                            if (fast != undefined && slow != undefined) {
+                                macd = fast - slow;
+                                signal = signalMA.nextValue(macd);
+                                if (signal != undefined) {
+                                    histogram = macd - signal;
+                                }
+                            }
+                            result = {
+                                MACD: macd,
+                                signal: signal,
+                                histogram: histogram
+                            };
+                            tick = yield result;
+                        }
+                    })();
+                    this.generator.next();
+                    values.forEach((tick) => {
+                        var result = this.generator.next(tick);
+                        if (result.value.MACD != undefined) {
+                            this.result.push(this.format(result.value));
+                        }
+                    });
+                }
+                nextValue(price) {
+                    var result = this.generator.next(price).value;
+                    if (result.MACD != undefined) {
+                        return this.format(result);
+                    }
+                }
+                static calculate(input) {
+                    return new MACD(input).getResult();
+                }
+            }
+            
+            class RSI extends Indicator {
+                constructor(input) {
+                    super();
+                    var period = input.period;
+                    var values = input.values;
+                    var GainProvider = new(function() {
+                        var lastValue;
+                        this.nextValue = function(value) {
+                            if (lastValue === undefined) {
+                                lastValue = value;
+                                return;
+                            }
+                            var gainValue = value - lastValue;
+                            lastValue = value;
+                            return gainValue > 0 ? gainValue : 0;
+                        };
+                    })();
+                    var LossProvider = new(function() {
+                        var lastValue;
+                        this.nextValue = function(value) {
+                            if (lastValue === undefined) {
+                                lastValue = value;
+                                return;
+                            }
+                            var lossValue = value - lastValue;
+                            lastValue = value;
+                            return lossValue < 0 ? Math.abs(lossValue) : 0;
+                        };
+                    })();
+                    var avgGain = new SMA({ period: period, values: [] });
+                    var avgLoss = new SMA({ period: period, values: [] });
+                    this.generator = (function*() {
+                        var result;
+                        var tick = yield;
+                        var currentGain, currentLoss, lastAvgGain, lastAvgLoss, rs;
+                        while (true) {
+                            currentGain = GainProvider.nextValue(tick);
+                            currentLoss = LossProvider.nextValue(tick);
+                            if (currentGain === undefined || currentLoss === undefined) {
+                                tick = yield;
+                                continue;
+                            }
+                            if (lastAvgGain === undefined) {
+                                lastAvgGain = avgGain.nextValue(currentGain);
+                                lastAvgLoss = avgLoss.nextValue(currentLoss);
+                                if (lastAvgGain !== undefined && lastAvgLoss !== undefined && lastAvgLoss !== 0) {
+                                    rs = lastAvgGain / lastAvgLoss;
+                                    result = 100 - 100 / (1 + rs);
+                                }
+                            } else {
+                                lastAvgGain = (lastAvgGain * (period - 1) + currentGain) / period;
+                                lastAvgLoss = (lastAvgLoss * (period - 1) + currentLoss) / period;
+                                if(lastAvgLoss !== 0) {
+                                    rs = lastAvgGain / lastAvgLoss;
+                                    result = 100 - 100 / (1 + rs);
+                                } else {
+                                    result = 100;
+                                }
+                            }
+                            tick = yield result;
+                        }
+                    })();
+                    this.generator.next();
+                    values.forEach((tick) => {
+                        var result = this.generator.next(tick);
+                        if (result.value != undefined) {
+                            this.result.push(this.format(result.value));
+                        }
+                    });
+                }
+                nextValue(price) {
+                    var result = this.generator.next(price).value;
+                    if (result != undefined) {
+                        return this.format(result);
+                    }
+                }
+                static calculate(input) {
+                    return new RSI(input).getResult();
+                }
+            }
+
+            class BollingerBands extends Indicator {
+                constructor(input) {
+                    super();
+                    var period = input.period;
+                    var values = input.values;
+                    var stdDev = input.stdDev;
+                    var ma = new SMA({ period: period, values: [] });
+                    this.result = [];
+                    this.generator = (function*() {
+                        var result;
+                        var tick = yield;
+                        var data = new Array(period);
+                        var i = 0;
+                        while (true) {
+                            data[i % period] = tick;
+                            i++;
+                            var middle = ma.nextValue(tick);
+                            if (middle != undefined) {
+                                var sum = 0;
+                                for (var j = 0; j < data.length; j++) {
+                                    sum = sum + (data[j] - middle) * (data[j] - middle);
+                                }
+                                var stdev = Math.sqrt(sum / period);
+                                result = {
+                                    middle: middle,
+                                    upper: middle + stdev * stdDev,
+                                    lower: middle - stdev * stdDev,
+                                    pb: (tick - (middle - stdev * stdDev)) / ((middle + stdev * stdDev) - (middle - stdev * stdDev))
+                                };
+                            }
+                            tick = yield result;
+                        }
+                    })();
+                    this.generator.next();
+                    values.forEach((tick) => {
+                        var result = this.generator.next(tick);
+                        if (result.value != undefined) {
+                            this.result.push(this.format(result.value));
+                        }
+                    });
+                }
+                nextValue(price) {
+                    var result = this.generator.next(price).value;
+                    if (result != undefined) {
+                        return this.format(result);
+                    }
+                }
+                static calculate(input) {
+                    return new BollingerBands(input).getResult();
+                }
+            }
+
+            class TrueRange extends Indicator {
+                constructor(input) {
+                    super();
+                    this.high = input.high || [];
+                    this.low = input.low || [];
+                    this.close = input.close || [];
+                    this.result = [];
+                    this.generator = (function* () {
+                        let lastClose;
+                        let tick = yield;
+                        while (true) {
+                            let trueRange;
+                            if (lastClose !== undefined) {
+                                trueRange = Math.max(tick.high - tick.low, Math.abs(tick.high - lastClose), Math.abs(tick.low - lastClose));
+                            } else {
+                                trueRange = tick.high - tick.low;
+                            }
+                            lastClose = tick.close;
+                            tick = yield trueRange;
+                        }
+                    })();
+                    this.generator.next();
+                    this.high.forEach((tickHigh, index) => {
+                        const tick = { high: tickHigh, low: this.low[index], close: this.close[index] };
+                        const result = this.generator.next(tick);
+                        if (result.value !== undefined) {
+                            this.result.push(this.format(result.value));
+                        }
+                    });
+                }
+                nextValue(tick) {
+                    const result = this.generator.next(tick).value;
+                    if (result !== undefined) {
+                        return this.format(result);
+                    }
+                }
+                static calculate(input) {
+                    return new TrueRange(input).getResult();
+                }
+            }
+            
+            class WEMA extends Indicator {
+                constructor(input) {
+                    super(input);
+                    var period = input.period;
+                    var values = input.values;
+                    var k = 1 / period;
+                    this.result = [];
+                    this.generator = (function*() {
+                        var last_wema;
+                        var tick = yield;
+                        var ma = new SMA({ period: period, values: [] });
+                        while (tick != undefined) {
+                            var next_value = ma.nextValue(tick);
+                            if (next_value != undefined) {
+                                last_wema = next_value;
+                                break;
+                            }
+                            tick = yield;
+                        }
+                        tick = yield last_wema;
+                        while (true) {
+                            last_wema = (tick * k) + (last_wema * (1 - k));
+                            tick = yield last_wema;
+                        }
+                    })();
+                    this.generator.next();
+                    values.forEach((tick) => {
+                        var result = this.generator.next(tick);
+                        if (result.value != undefined) {
+                            this.result.push(this.format(result.value));
+                        }
+                    });
+                }
+                nextValue(price) {
+                    var result = this.generator.next(price).value;
+                    if (result != undefined) {
+                        return this.format(result);
+                    }
+                }
+                static calculate(input) {
+                    return new WEMA(input).getResult();
+                }
+            }
+
+            class ATR extends Indicator {
+                constructor(input) {
+                    super();
+                    let period = input.period;
+                    let high = input.high || [];
+                    let low = input.low || [];
+                    let close = input.close || [];
+                    let tr = new TrueRange({ high: [], low: [], close: [] });
+                    let wildersSmoothing = new WEMA({ period: period, values: [] });
+                    this.generator = (function* () {
+                        let tick = yield;
+                        let atr;
+                        while (true) {
+                            let trueRange = tr.nextValue(tick);
+                            if (trueRange !== undefined) {
+                                atr = wildersSmoothing.nextValue(trueRange);
+                            }
+                            tick = yield atr;
+                        }
+                    })();
+                    this.generator.next();
+                    high.forEach((tickHigh, index) => {
+                        const tick = { high: tickHigh, low: low[index], close: close[index] };
+                        const result = this.generator.next(tick);
+                        if (result.value !== undefined) {
+                            this.result.push(this.format(result.value));
+                        }
+                    });
+                }
+                nextValue(tick) {
+                    const result = this.generator.next(tick).value;
+                    if (result !== undefined) {
+                        return this.format(result);
+                    }
+                }
+                static calculate(input) {
+                    const trueRanges = TrueRange.calculate(input);
+                    const wema = new WEMA({ period: input.period, values: trueRanges });
+                    return wema.getResult();
+                }
+            }
+
+            class ADX extends Indicator {
+                constructor(input) {
+                    super();
+                    var period = input.period;
+                    var high = input.high;
+                    var low = input.low;
+                    var close = input.close;
+                    var atr = new(function() {
+                        var lastValue;
+                        var trueRange;
+                        var atr;
+                        var atrSma = new SMA({ period: period, values: [] });
+                        this.nextValue = function(tick) {
+                            if (lastValue === undefined) {
+                                lastValue = tick;
+                                return;
+                            }
+                            trueRange = Math.max(tick.high - tick.low, Math.abs(tick.high - lastValue.close), Math.abs(tick.low - lastValue.close));
+                            lastValue = tick;
+                            if (atr === undefined) {
+                                atr = atrSma.nextValue(trueRange);
+                            } else {
+                                atr = (atr * (period - 1) + trueRange) / period;
+                            }
+                            return atr;
+                        };
+                    })();
+                    var adx;
+                    var pdi;
+                    var mdi;
+                    var pdiSma = new SMA({ period: period, values: [] });
+                    var mdiSma = new SMA({ period: period, values: [] });
+                    var adxSma = new SMA({ period: period, values: [] });
+                    var lastTick;
+                    this.generator = (function*() {
+                        var tick = yield;
+                        var result;
+                        while (true) {
+                            if (lastTick === undefined) {
+                                lastTick = tick;
+                                tick = yield;
+                                continue;
+                            }
+                            var upMove = tick.high - lastTick.high;
+                            var downMove = lastTick.low - tick.low;
+                            var pdiValue = (upMove > downMove && upMove > 0) ? upMove : 0;
+                            var mdiValue = (downMove > upMove && downMove > 0) ? downMove : 0;
+                            lastTick = tick;
+                            var atrValue = atr.nextValue(tick);
+                            if (atrValue === undefined || atrValue === 0) {
+                                tick = yield;
+                                continue;
+                            }
+                            if (pdi === undefined) {
+                                pdi = pdiSma.nextValue(100 * pdiValue / atrValue);
+                                mdi = mdiSma.nextValue(100 * mdiValue / atrValue);
+                                if (pdi === undefined) {
+                                    tick = yield;
+                                    continue;
+                                }
+                            } else {
+                                pdi = (pdi * (period - 1) + 100 * pdiValue / atrValue) / period;
+                                mdi = (mdi * (period - 1) + 100 * mdiValue / atrValue) / period;
+                            }
+                            var dx = (pdi + mdi === 0) ? 0 : 100 * Math.abs(pdi - mdi) / (pdi + mdi);
+                            if (adx === undefined) {
+                                adx = adxSma.nextValue(dx);
+                            } else {
+                                adx = (adx * (period - 1) + dx) / period;
+                            }
+                            if (adx != undefined) {
+                                result = {
+                                    adx: adx,
+                                    pdi: pdi,
+                                    mdi: mdi
+                                };
+                            }
+                            tick = yield result;
+                        }
+                    })();
+                    this.generator.next();
+                    high.forEach((tickHigh, index) => {
+                        const tick = { high: tickHigh, low: low[index], close: close[index] };
+                        var result = this.generator.next(tick);
+                        if (result.value != undefined) {
+                            this.result.push(this.format(result.value));
+                        }
+                    });
+                }
+                nextValue(price) {
+                    var result = this.generator.next(price).value;
+                    if (result != undefined) {
+                        return this.format(result);
+                    }
+                }
+                static calculate(input) {
+                    return new ADX(input).getResult();
+                }
+            }
+
+            exports.SMA = SMA;
+            exports.EMA = EMA;
+            exports.MACD = MACD;
+            exports.RSI = RSI;
+            exports.BollingerBands = BollingerBands;
+            exports.ADX = ADX;
+            exports.ATR = ATR;
+            exports.TrueRange = TrueRange;
+            exports.WEMA = WEMA;
+            exports.Indicator = Indicator;
+
+            Object.defineProperty(exports, '__esModule', { value: true });
+
+        })));
+    </script>
+    
+    <script type="module">
+        // DOMContentLoaded olayı, tüm HTML'nin yüklenip ayrıştırılmasını bekler
+        window.addEventListener('DOMContentLoaded', () => {
+            // Kütüphaneyi güvenli bir şekilde global scope'a atama
+            const ti = window.technicalindicators;
+
+            // Güvenlik kontrolü: Kütüphane ve temel bir fonksiyon (RSI) var mı?
+            if (!ti || !ti.RSI) {
+                console.error("KRİTİK HATA: `technicalindicators` kütüphanesi veya RSI fonksiyonu bulunamadı. Gömülü kodda bir sorun olabilir.");
+                const errorOverlay = document.getElementById('critical-error-overlay');
+                if (errorOverlay) {
+                    errorOverlay.classList.remove('hidden');
+                    errorOverlay.classList.add('flex');
+                }
+                return; // Hata durumunda uygulamayı başlatma
+            }
+
+            // --- UYGULAMA KODU ---
+            const config = {
+                coinList: ['AIUSDT', 'ALGOUSDT', 'ALICEUSDT', 'ALPINEUSDT', 'ALTUSDT', 'AMPUSDT', 'ANKRUSDT', 'APEUSDT', 'API3USDT', 'APTUSDT', 'ARBUSDT', 'ARKMUSDT', 'ARKUSDT', 'ARPAUSDT', 'ARUSDT', 'ASRUSDT', 'ATMUSDT', 'ATOMUSDT', 'AUCTIONUSDT', 'AUDIOUSDT', 'AVAXUSDT', 'AXLUSDT', 'AXSUSDT', 'BAKEUSDT', 'BARUSDT', 'BBUSDT', 'BCHUSDT', 'BEAMXUSDT', 'BELUSDT', 'BLURUSDT', 'BNBUSDT', 'BOMEUSDT', 'BONKUSDT', 'BTTCUSDT', 'CAKEUSDT', 'CELOUSDT', 'CFXUSDT', 'CHZUSDT', 'CITYUSDT', 'CKBUSDT', 'COMPUSDT', 'COTIUSDT', 'CRVUSDT', 'CYBERUSDT', 'DENTUSDT', 'DOGEUSDT', 'DOTUSDT', 'DYDXUSDT', 'DYMUSDT', 'EDUUSDT', 'EGLDUSDT', 'ENAUSDT', 'ENJUSDT', 'ENSUSDT', 'ETCUSDT', 'ETHFIUSDT', 'ETHUSDT', 'FETUSDT', 'FILUSDT', 'FLOKIUSDT', 'GALAUSDT', 'GRTUSDT', 'HBARUSDT', 'HIGHUSDT', 'HOTUSDT', 'ICPUSDT', 'IDUSDT', 'INJUSDT', 'IOUSDT', 'IOTAUSDT', 'JASMYUSDT', 'JTOUSDT', 'JUPUSDT', 'JUVUSDT', 'LDOUSDT', 'LINKUSDT', 'LISTAUSDT', 'LPTUSDT', 'LRCUSDT', 'LTCUSDT', 'LUNCUSDT', 'MAGICUSDT', 'MANAUSDT', 'MANTAUSDT', 'MASKUSDT', 'MAVUSDT', 'MEMEUSDT', 'METISUSDT', 'MINAUSDT', 'MKRUSDT', 'NEARUSDT', 'NEOUSDT', 'NFPUSDT', 'NOTUSDT', 'NTRNUSDT', 'OGNUSDT', 'OGUSDT', 'OMNIUSDT', 'OMUSDT', 'ONDOUSDT', 'OPUSDT', 'ORDIUSDT', 'PENDLEUSDT', 'PEOPLEUSDT', 'PEPEUSDT', 'PIXELUSDT', 'POLYXUSDT', 'PORTALUSDT', 'PORTOUSDT', 'PSGUSDT', 'PYTHUSDT', 'QTUMUSDT', 'RNDRUSDT', 'RONINUSDT', 'ROSEUSDT', 'RSRUSDT', 'SAGAUSDT', 'SANDUSDT', 'SANTOSUSDT', 'SEIUSDT', 'SHIBUSDT', 'SKLUSDT', 'SNXUSDT', 'SOLUSDT', 'STORJUSDT', 'STRKUSDT', 'STXUSDT', 'SUIUSDT', 'SUPERUSDT', 'SUSHIUSDT', 'TAOUSDT', 'THETAUSDT', 'TIAUSDT', 'TLMUSDT', 'TNSRUSDT', 'TONUSDT', 'TRBUSDT', 'TRUUSDT', 'TRXUSDT', 'TWTUSDT', 'UMAUSDT', 'UNIUSDT', 'USDCUSDT', 'USTCUSDT', 'VETUSDT', 'WIFUSDT', 'WLDUSDT', 'WUSDT', 'XAIUSDT', 'XLMUSDT', 'XRPUSDT', 'XVGUSDT', 'ZILUSDT', 'ZKUSDT', 'ZROUSDT'],
+                scanInterval: 15000, 
+                cacheDuration: 1000 * 60 * 15, // 15 dakika
+            };
+            const UIElements = {
+                coinList: document.getElementById('coin-list'),
+                signalsGrid: document.getElementById('signals-grid'),
+                stats: { total: document.getElementById('total-signals'), successful: document.getElementById('successful-signals'), stopped: document.getElementById('stopped-signals'), rate: document.getElementById('success-rate'), },
+                modal: { container: document.getElementById('details-modal'), title: document.getElementById('modal-title'), content: document.getElementById('modal-content'), closeButton: document.getElementById('close-modal'), },
+                connectionStatus: document.getElementById('connection-status'),
+                coinSearch: document.getElementById('coin-search'),
+                placeholderCard: document.getElementById('placeholder-card'),
+                terminal: {
+                    output: document.getElementById('terminal-output'),
+                    progress: document.getElementById('terminal-progress-indicator'),
+                }
+            };
+            let state = { coinsData: {}, activeSignals: {}, signalStats: { total: 0, successful: 0, stopped: 0 }, currentScanIndex: 0, klinesCache: new Map(), webSocket: null, indicatorSettings: {}, priorityList: [] };
+            
+            const terminalManager = {
+                log(message, type = 'info') {
+                    const now = new Date();
+                    const timeString = now.toTimeString().split(' ')[0];
+                    const p = document.createElement('p');
+                    let icon = '';
+                    let colorClass = '';
+                    switch(type) {
+                        case 'scan': icon = '🔍'; colorClass = 'log-scan'; break;
+                        case 'success': icon = '✅'; colorClass = 'log-success'; break;
+                        case 'error': icon = '❌'; colorClass = 'log-error'; break;
+                        default: icon = 'ℹ️'; colorClass = 'log-info';
+                    }
+                    p.innerHTML = `<span class="icon">${icon}</span> <span>[${timeString}] ${message}</span>`;
+                    p.className = colorClass;
+                    UIElements.terminal.output.appendChild(p);
+                    UIElements.terminal.output.scrollTop = UIElements.terminal.output.scrollHeight;
+                },
+                updateProgress(currentIndex, total) {
+                    const percentage = total > 0 ? ((currentIndex / total) * 100) : 0;
+                    UIElements.terminal.progress.style.width = `${percentage.toFixed(2)}%`;
+                    UIElements.terminal.progress.textContent = `${percentage.toFixed(0)}%`;
+                }
+            };
+
+            const apiManager = {
+                baseUrl: 'https://api.binance.com/api/v3',
+                async get24hTickers() { try { const response = await fetch(`${this.baseUrl}/ticker/24hr`); if (!response.ok) throw new Error(`API Error: ${response.status}`); return await response.json(); } catch (error) { console.error("Ticker verileri alınamadı:", error); terminalManager.log('Piyasa verileri alınamadı.', 'error'); return []; } },
+                async getKlines(symbol, interval, limit = 200) { const cacheKey = `${symbol}_${interval}`; const cached = state.klinesCache.get(cacheKey); if (cached && (Date.now() - cached.timestamp < config.cacheDuration)) { return cached.data; } try { const response = await fetch(`${this.baseUrl}/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`); if (!response.ok) throw new Error(`API Error: ${response.status}`); const data = await response.json(); state.klinesCache.set(cacheKey, { data, timestamp: Date.now() }); return data; } catch (error) { console.error(`${symbol} için ${interval} klines verisi alınamadı:`, error); terminalManager.log(`${symbol} için veri alınamadı.`, 'error'); return null; } }
+            };
+
+            const indicatorCalculator = {
+                initializeSettings(symbol) { 
+                    if (!state.indicatorSettings[symbol]) { 
+                        state.indicatorSettings[symbol] = { 
+                            rsiPeriod: 14, 
+                            macd: { fastPeriod: 12, slowPeriod: 26, signalPeriod: 9 }, 
+                            bbPeriod: 20, 
+                            adxPeriod: 14,
+                            atrPeriod: 14
+                        }; 
+                    } 
+                },
+                calculateAll(symbol, klines) { 
+                    if (!klines || klines.length < 30) return null; 
+                    this.initializeSettings(symbol); 
+                    const settings = state.indicatorSettings[symbol]; 
+                    
+                    const inputs = {
+                        open: klines.map(k => parseFloat(k[1])),
+                        high: klines.map(k => parseFloat(k[2])),
+                        low: klines.map(k => parseFloat(k[3])),
+                        close: klines.map(k => parseFloat(k[4])),
+                        volume: klines.map(k => parseFloat(k[5])),
+                    };
+
+                    const calculateVWAP = (klines) => {
+                        let cumulativePV = 0;
+                        let cumulativeVolume = 0;
+                        klines.forEach(k => {
+                            const high = parseFloat(k[2]);
+                            const low = parseFloat(k[3]);
+                            const close = parseFloat(k[4]);
+                            const volume = parseFloat(k[5]);
+                            const typicalPrice = (high + low + close) / 3;
+                            cumulativePV += typicalPrice * volume;
+                            cumulativeVolume += volume;
+                        });
+                        return cumulativeVolume > 0 ? cumulativePV / cumulativeVolume : 0;
+                    };
+
+                    const getMarketStructure = (klines) => {
+                        const recentKlines = klines.slice(-10); // Son 10 muma bak
+                        const highs = recentKlines.map(k => parseFloat(k[2]));
+                        const lows = recentKlines.map(k => parseFloat(k[3]));
+                        
+                        if(highs.length < 3) return "Belirsiz";
+
+                        const lastHigh = highs[highs.length - 1];
+                        const prevHigh = Math.max(...highs.slice(0, highs.length - 2));
+                        const lastLow = lows[lows.length - 1];
+                        const prevLow = Math.min(...lows.slice(0, lows.length - 2));
+
+                        if (lastHigh > prevHigh && lastLow > prevLow) return "Yükseliş Trendi (HH/HL)";
+                        if (lastHigh < prevHigh && lastLow < prevLow) return "Düşüş Trendi (LH/LL)";
+                        return "Yatay Piyasa";
+                    };
+
+                    try { 
+                        const vwap = calculateVWAP(klines);
+                        const vwapDeviation = vwap > 0 ? ((inputs.close[inputs.close.length - 1] - vwap) / vwap * 100).toFixed(2) : 0;
+                        const marketStructure = getMarketStructure(klines);
+                        
+                        return { 
+                            rsi: ti.RSI.calculate({ values: inputs.close, period: settings.rsiPeriod }).pop()?.toFixed(2), 
+                            macd: ti.MACD.calculate({ ...settings.macd, values: inputs.close, SimpleMAOscillator: false, SimpleMASignal: false }).pop(), 
+                            bb: ti.BollingerBands.calculate({ period: settings.bbPeriod, values: inputs.close, stdDev: 2 }).pop(), 
+                            adx: ti.ADX.calculate({ period: settings.adxPeriod, high: inputs.high, low: inputs.low, close: inputs.close }).pop(),
+                            atr: ti.ATR.calculate({ period: settings.atrPeriod, high: inputs.high, low: inputs.low, close: inputs.close }).pop()?.toFixed(4),
+                            vwapDeviation: vwapDeviation,
+                            marketStructure: marketStructure
+                        }; 
+                    } catch (error) { 
+                        console.error(`${symbol} için indikatör hesaplama hatası:`, error); 
+                        terminalManager.log(`${symbol} indikatör hatası.`, 'error');
+                        return null; 
+                    } 
+                },
+            };
+
+            const aiCore = {
+                createPrompt(symbol, price, data) { 
+                    const formatIndicators = (indicators) => { 
+                        if (!indicators) return "Hesaplanamadı."; 
+                        const macdHistogram = indicators.macd && indicators.macd.histogram ? indicators.macd.histogram.toFixed(4) : "N/A";
+                        const adxValue = indicators.adx && indicators.adx.adx ? indicators.adx.adx.toFixed(2) : "N/A";
+                        return `RSI: ${indicators.rsi}, MACD Hist: ${macdHistogram}, ADX: ${adxValue}`; 
+                    }; 
+                    const btcContext = `4s BTC Trendi: ${data.btc.trend}, 4s BTC RSI: ${data.btc.rsi}`; 
+                    return `Sen, dünya standartlarında, elit bir kantitatif trader asistanısın. Görevin, sana sağlanan çok çeşitli teknik ve yapısal verileri analiz ederek, yüksek olasılıklı, gerçekçi ve kısa vadeli 'AL' sinyalleri üretmektir. Sadece veriye dayalı, matematiksel ve profesyonel kararlar ver.
+                        PİYASA GENEL DURUMU (BTC): ${btcContext}
+                        ANALİZ EDİLECEK COIN: ${symbol}
+                        MEVCUT FİYAT: ${price}
+                        İŞLENMİŞ TEKNİK VERİLER:
+                        - 15 Dakikalık İndikatörler: ${formatIndicators(data.indicators.m15)}
+                        - 1 Saatlik İndikatörler: ${formatIndicators(data.indicators.h1)}
+                        - 4 Saatlik İndikatörler: ${formatIndicators(data.indicators.h4)}
+                        - 1 Günlük İndikatörler: ${formatIndicators(data.indicators.d1)}
+                        YAPISAL VERİLER:
+                        - 4s Piyasa Yapısı (Son 10 mum): ${data.indicators.h4?.marketStructure}
+                        - 4s VWAP Sapması (%): ${data.indicators.h4?.vwapDeviation}
+                        - Günlük Volatilite (ATR): ${data.indicators.d1?.atr}
+                        GÖREV: Yukarıdaki teknik ve yapısal verileri bütünsel olarak analiz et. ${symbol} için bir 'AL' sinyali oluşturmanın mantıklı olup olmadığını değerlendir. Cevabını MUTLAKA aşağıdaki JSON formatında ver. Açıklama ekleme, sadece JSON çıktısı ver.
+                        {
+                          "shouldSignal": boolean,
+                          "confidenceScore": number,
+                          "analysisRationale": "Karar sürecini, sana verdiğim tüm indikatörlere (RSI, MACD, ADX), piyasa yapısına, VWAP sapmasına ve BTC durumuna atıfta bulunarak detaylıca açıkla. Farklı zaman dilimlerindeki uyum veya uyumsuzlukları belirt. Örneğin: '4 saatlik grafikte Yükseliş Trendi (HH/HL) yapısı teyit edildi. Fiyat, VWAP'ın %2 altında, bu da potansiyel bir alım fırsatına işaret ediyor. MACD pozitif bölgeye geçmiş ve günlük ADX trendin güçlendiğini gösteriyor. Bitcoin'in de yükseliş trendinde olması bu sinyali güçlendiriyor. Stop-loss seviyesi, günlük ATR değeri ve bir önceki dip seviyesi dikkate alınarak belirlenmiştir.'",
+                          "targets": { "tp1": number, "tp2": number },
+                          "stopLoss": number
+                        }
+                        HEDEF BELİRLEME KURALLARI (ÇOK ÖNEMLİ):
+                        1. Gerçekçi ve Ulaşılabilir Ol: Hedefler hayali olmamalı. Kısa vadeli (saatlik/günlük) hedefler belirle.
+                        2. TP1 (Hedef 1): En yakın ve bariz likidite (direnç) bölgesi olmalı. Fiyatın zorlanmadan ulaşabileceği ilk mantıklı seviye.
+                        3. TP2 (Hedef 2): Daha güçlü, bir üstteki direnç bölgesi olmalı. TP1'in kırılması durumunda potansiyel hedef.
+                        4. Stop Loss (SL): Fiyat yapısını bozacak en yakın ve en mantıklı destek seviyesinin hemen altı olmalı. İşlemin geçersiz olacağı seviyeyi doğru belirle.
+                        5. Risk/Kazanç Oranı: Belirlediğin hedeflerin, SL'e göre makul bir risk/kazanç oranı sunduğundan emin ol.
+                        GENEL KURALLAR:
+                        - 'shouldSignal' sadece tüm veriler güçlü bir yükseliş potansiyeli gösterdiğinde ve BTC durumu riskli değilse 'true' olmalı.
+                        - 'confidenceScore' (1-10 arası) sinyale olan güvenini belirtmeli. 7'den düşükse sinyal üretme.
+                        - 'analysisRationale' şeffaf, veriye dayalı ve profesyonel olmalı.
+                        `; 
+                },
+                async analyzeCoin(symbol, price, data) {
+                    const userPrompt = this.createPrompt(symbol, price, data);
+                    const payload = {
+                        contents: [{ role: "user", parts: [{ text: userPrompt }] }],
+                        generationConfig: {
+                            responseMimeType: "application/json",
+                            responseSchema: {
+                                type: "OBJECT",
+                                properties: {
+                                    "shouldSignal": { "type": "BOOLEAN" },
+                                    "confidenceScore": { "type": "NUMBER" },
+                                    "analysisRationale": { "type": "STRING" },
+                                    "targets": {
+                                        "type": "OBJECT",
+                                        properties: {
+                                            "tp1": { "type": "NUMBER" },
+                                            "tp2": { "type": "NUMBER" }
+                                        },
+                                        required: ["tp1", "tp2"]
+                                    },
+                                    "stopLoss": { "type": "NUMBER" }
+                                },
+                                required: ["shouldSignal", "confidenceScore", "analysisRationale", "targets", "stopLoss"]
+                            }
+                        }
+                    };
+                    const apiKey = ""; // Canvas ortamı için boş bırakın
+                    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+
+                    try {
+                        const response = await fetch(apiUrl, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+
+                        if (!response.ok) {
+                            const errorText = await response.text();
+                            console.error("Gemini API Hata Yanıtı:", errorText);
+                            throw new Error(`Gemini API Hatası: ${response.status} ${response.statusText}`);
+                        }
+
+                        const result = await response.json();
+                        
+                        if (result.candidates && result.candidates[0]?.content?.parts[0]) {
+                            const text = result.candidates[0].content.parts[0].text;
+                            try {
+                                return JSON.parse(text);
+                            } catch (e) {
+                                console.error("Gemini yanıtından JSON ayrıştırılamadı:", text, e);
+                                terminalManager.log(`${symbol} AI yanıtı anlaşılamadı.`, 'error');
+                                return null;
+                            }
+                        } else {
+                            console.error("Beklenmedik Gemini API yanıt yapısı:", result);
+                            terminalManager.log(`${symbol} AI'dan beklenmedik yanıt.`, 'error');
+                            return null;
+                        }
+                    } catch (error) {
+                        console.error("Gemini analizi başarısız:", error);
+                        terminalManager.log(`${symbol} AI analizi başarısız.`, 'error');
+                        uiManager.setScanStatus(symbol, "Analiz Hatası!");
+                        return null;
+                    }
+                }
+            };
+
+            const uiManager = {
+                updateCoinList() { const sortedCoins = Object.values(state.coinsData).filter(c => config.coinList.includes(c.s)).sort((a, b) => parseFloat(b.P) - parseFloat(a.P)); UIElements.coinList.innerHTML = ''; const searchTerm = UIElements.coinSearch.value.toLowerCase(); sortedCoins.filter(coin => coin.s.toLowerCase().includes(searchTerm)).forEach(coin => { const price = parseFloat(coin.c).toFixed(Math.max(2, (coin.c.split('.')[1] || '').length)); const change = parseFloat(coin.P); const changeColor = change >= 0 ? 'text-green-400' : 'text-red-400'; const coinEl = document.createElement('div'); coinEl.id = `coin-${coin.s}`; coinEl.className = 'flex justify-between items-center p-2 rounded-lg hover:bg-gray-800/50 transition-colors cursor-pointer'; coinEl.innerHTML = `<div class="flex items-center gap-3"><img src="https://s2.coinmarketcap.com/static/img/coins/64x64/${coin.s.replace('USDT', '').toLowerCase()}.png" onerror="this.onerror=null;this.src='https://placehold.co/32x32/161b22/c9d1d9?text=${coin.s[0]}';" alt="${coin.s}" class="w-8 h-8 rounded-full"><div><p class="font-bold text-sm text-white">${coin.s.replace('USDT', '')}</p><p class="text-xs text-gray-400" id="price-${coin.s}">$${price}</p></div></div><div class="text-right"><p class="font-semibold text-sm ${changeColor}">${change.toFixed(2)}%</p><p class="text-xs text-gray-500" id="status-${coin.s}"></p></div>`; UIElements.coinList.appendChild(coinEl); }); },
+                updateLivePrice(data) { 
+                    const newPrice = parseFloat(data.c);
+                    const formattedPrice = newPrice.toFixed(Math.max(2, (data.c.split('.')[1] || '').length));
+
+                    // Sol taraftaki liste fiyatını güncelle
+                    const priceEl = document.getElementById(`price-${data.s}`); 
+                    if (priceEl) { 
+                        const oldPrice = parseFloat(priceEl.innerText.replace('$', '')); 
+                        const priceColor = newPrice > oldPrice ? 'text-green-400' : newPrice < oldPrice ? 'text-red-400' : 'text-gray-400'; 
+                        priceEl.innerText = `$${formattedPrice}`; 
+                        priceEl.classList.remove('text-green-400', 'text-red-400', 'text-gray-400'); 
+                        priceEl.classList.add(priceColor); 
+                        setTimeout(() => priceEl.classList.remove(priceColor), 500); 
+                    }
+
+                    // Aktif sinyal kartı varsa onu da güncelle
+                    if(state.activeSignals[data.s]) {
+                        this.updateSignalProgressBar(data.s, newPrice);
+                        
+                        const signalPriceEl = document.getElementById(`live-price-signal-${data.s}`);
+                        if (signalPriceEl) {
+                            const oldPrice = parseFloat(signalPriceEl.textContent);
+                            const priceColor = newPrice > oldPrice ? 'text-green-400' : newPrice < oldPrice ? 'text-red-400' : 'text-gray-300';
+                            signalPriceEl.textContent = formattedPrice;
+                            signalPriceEl.classList.remove('text-green-400', 'text-red-400', 'text-gray-300');
+                            signalPriceEl.classList.add(priceColor);
+                        }
+                    }
+                },
+                setScanStatus(symbol, text) { const statusEl = document.getElementById(`status-${symbol}`); if (statusEl) { statusEl.innerHTML = `<span class="blinking">${text}</span>`; } },
+                createSignalCard(symbol, signalData, entryPrice) { 
+                    if (UIElements.placeholderCard) { UIElements.placeholderCard.remove(); UIElements.placeholderCard = null; } 
+                    
+                    const tp1_profit_pct = ((signalData.targets.tp1 - entryPrice) / entryPrice * 100).toFixed(2);
+                    const tp2_profit_pct = ((signalData.targets.tp2 - entryPrice) / entryPrice * 100).toFixed(2);
+                    const sl_loss_pct = ((signalData.stopLoss - entryPrice) / entryPrice * 100).toFixed(2);
+
+                    const signalId = `signal-${symbol}-${Date.now()}`; 
+                    const card = document.createElement('div'); 
+                    card.id = signalId; 
+                    card.className = 'signal-card glass-effect rounded-lg p-4 flex flex-col space-y-3 border-l-emerald-500'; 
+                    card.innerHTML = `
+                        <div class="flex justify-between items-center">
+                            <div class="flex items-center gap-2">
+                                <img src="https://s2.coinmarketcap.com/static/img/coins/64x64/${symbol.replace('USDT', '').toLowerCase()}.png" onerror="this.onerror=null;this.src='https://placehold.co/24x24/161b22/c9d1d9?text=${symbol[0]}';" alt="${symbol}" class="w-6 h-6 rounded-full">
+                                <h4 class="text-lg font-bold text-white">${symbol.replace('USDT','')}</h4>
+                                <span id="live-price-signal-${symbol}" class="font-mono text-lg text-gray-300 ml-2">${parseFloat(entryPrice).toFixed(Math.max(2, (entryPrice.split('.')[1] || '').length))}</span>
+                            </div>
+                            <div class="px-2 py-1 rounded text-xs font-bold bg-emerald-500/20 text-emerald-300">Güven: ${signalData.confidenceScore}/10</div>
+                        </div>
+                        <div id="status-box-${signalId}" class="text-center p-2 rounded-lg bg-gray-800/60">
+                            <p class="text-sm font-medium text-yellow-300">AKTİF</p>
+                            <p class="text-xs text-gray-400">Hedefler bekleniyor</p>
+                        </div>
+                        <div class="grid grid-cols-3 gap-x-4 gap-y-2 text-sm">
+                            <div class="text-gray-400">Giriş Fiyatı</div>
+                            <div class="text-right font-mono text-white col-span-2">${entryPrice}</div>
+
+                            <div class="text-gray-400">Hedef 1 (TP1)</div>
+                            <div class="text-right font-mono text-green-400">${signalData.targets.tp1}</div>
+                            <div class="text-right font-mono text-green-500">(+${tp1_profit_pct}%)</div>
+
+                            <div class="text-gray-400">Hedef 2 (TP2)</div>
+                            <div class="text-right font-mono text-green-300">${signalData.targets.tp2}</div>
+                            <div class="text-right font-mono text-green-400">(+${tp2_profit_pct}%)</div>
+
+                            <div class="text-gray-400">Stop Loss (SL)</div>
+                            <div class="text-right font-mono text-red-400">${signalData.stopLoss}</div>
+                            <div class="text-right font-mono text-red-500">(${sl_loss_pct}%)</div>
+                        </div>
+                        <div class="mt-2">
+                            <div class="price-progress-bar" id="progress-bar-${signalId}">
+                                <div class="price-indicator" id="price-indicator-${signalId}"></div>
+                            </div>
+                        </div>
+                        <button data-symbol="${symbol}" data-rationale="${encodeURIComponent(signalData.analysisRationale)}" class="details-btn mt-2 w-full bg-blue-600/50 hover:bg-blue-600/80 text-white text-sm font-semibold py-2 rounded-lg transition-colors">Analiz Detayları</button>`; 
+                    UIElements.signalsGrid.prepend(card); 
+                    this.updateStats(true); 
+                    state.activeSignals[symbol] = { ...signalData, id: signalId, status: 'active', entryPrice: parseFloat(entryPrice) }; 
+                    this.updateSignalProgressBar(symbol, parseFloat(entryPrice));
+                },
+                updateSignalProgressBar(symbol, currentPrice) {
+                    const signal = state.activeSignals[symbol];
+                    if (!signal) return;
+
+                    const progressBar = document.getElementById(`progress-bar-${signal.id}`);
+                    const priceIndicator = document.getElementById(`price-indicator-${signal.id}`);
+
+                    if (!progressBar || !priceIndicator) return;
+
+                    const { stopLoss, targets } = signal;
+                    const tp2 = targets.tp2;
+
+                    const totalRange = tp2 - stopLoss;
+                    if (totalRange <= 0) return;
+
+                    const currentProgress = currentPrice - stopLoss;
+                    let progressPct = (currentProgress / totalRange) * 100;
+                    
+                    // Çubuğun %0 ile %100 arasında kalmasını sağla
+                    progressPct = Math.max(0, Math.min(100, progressPct));
+
+                    priceIndicator.style.left = `${progressPct}%`;
+                },
+                updateSignalStatus(symbol, status) { const signal = state.activeSignals[symbol]; if (!signal || signal.status !== 'active') return; signal.status = status; const statusBox = document.getElementById(`status-box-${signal.id}`); if (statusBox) { if (status === 'successful') { statusBox.innerHTML = `<p class="text-sm font-medium text-green-400">BAŞARILI</p><p class="text-xs text-gray-400">Hedefe ulaşıldı!</p>`; statusBox.parentElement.classList.remove('border-l-emerald-500'); statusBox.parentElement.classList.add('border-l-green-400'); this.updateStats(false, true, false); } else if (status === 'stopped') { statusBox.innerHTML = `<p class="text-sm font-medium text-red-400">STOP OLDU</p><p class="text-xs text-gray-400">Stop seviyesine ulaşıldı.</p>`; statusBox.parentElement.classList.remove('border-l-emerald-500'); statusBox.parentElement.classList.add('border-l-red-400'); this.updateStats(false, false, true); } } delete state.activeSignals[symbol]; },
+                updateStats(isNew = false, isSuccess = false, isStop = false) {
+                    if (isNew) state.signalStats.total++;
+                    if (isSuccess) state.signalStats.successful++;
+                    if (isStop) state.signalStats.stopped++;
+
+                    UIElements.stats.total.textContent = state.signalStats.total;
+                    UIElements.stats.successful.textContent = state.signalStats.successful;
+                    UIElements.stats.stopped.textContent = state.signalStats.stopped;
+
+                    const concludedSignals = state.signalStats.successful + state.signalStats.stopped;
+                    if (concludedSignals > 0) {
+                        const successRate = (state.signalStats.successful / concludedSignals) * 100;
+                        UIElements.stats.rate.textContent = `${successRate.toFixed(1)}%`;
+                    } else {
+                        UIElements.stats.rate.textContent = 'N/A';
+                    }
+                },
+                toggleModal(show, title = '', content = '') { if (show) { UIElements.modal.title.textContent = `${title.replace('USDT','')} Analiz Detayları`; UIElements.modal.content.innerHTML = `<p>${decodeURIComponent(content).replace(/\n/g, '<br>')}</p>`; UIElements.modal.container.classList.remove('hidden'); UIElements.modal.container.classList.add('flex'); } else { UIElements.modal.container.classList.add('hidden'); UIElements.modal.container.classList.remove('flex');} },
+                setConnectionStatus(connected) { const dot = UIElements.connectionStatus.querySelector('.status-dot'); const text = UIElements.connectionStatus.querySelector('span'); if(connected){ dot.classList.remove('bg-yellow-400', 'bg-red-400'); dot.classList.add('bg-green-400'); text.textContent = 'Bağlandı'; } else { dot.classList.remove('bg-green-400'); dot.classList.add('bg-red-400'); text.textContent = 'Bağlantı Kesildi'; } }
+            };
+
+            const App = {
+                async init() { 
+                    terminalManager.log('Uygulama başlatılıyor...');
+                    const tickers = await apiManager.get24hTickers(); 
+                    terminalManager.log('Piyasa verileri alındı.');
+                    tickers.forEach(t => { if (config.coinList.includes(t.symbol)) { state.coinsData[t.symbol] = { s: t.symbol, c: t.lastPrice, P: t.priceChangePercent, q: t.quoteVolume }; } }); 
+                    uiManager.updateCoinList(); 
+                    this.setupEventListeners(); 
+                    this.startWebSocket(); 
+                    setTimeout(() => this.scanLoop(), 2000); 
+                },
+                updatePriorityList() {
+                    terminalManager.log('Piyasa analiz ediliyor ve öncelik listesi oluşturuluyor...');
+                    const allCoins = Object.values(state.coinsData).filter(c => c && config.coinList.includes(c.s));
+
+                    const scoredCoins = allCoins
+                        .map(coin => {
+                            const priceChange = parseFloat(coin.P);
+                            const volume = parseFloat(coin.q);
+                            if (priceChange <= 0 || volume <= 0 || !isFinite(volume)) {
+                                return { s: coin.s, score: -Infinity };
+                            }
+                            const score = priceChange * Math.log10(volume);
+                            return { s: coin.s, score };
+                        })
+                        .filter(coin => isFinite(coin.score))
+                        .sort((a, b) => b.score - a.score);
+
+                    state.priorityList = scoredCoins.slice(0, 50).map(c => c.s);
+                    terminalManager.log(`Öncelikli ${state.priorityList.length} coin belirlendi. Tarama başlıyor.`, 'success');
+                },
+                setupEventListeners() { UIElements.coinSearch.addEventListener('input', () => uiManager.updateCoinList()); UIElements.modal.closeButton.addEventListener('click', () => uiManager.toggleModal(false)); UIElements.signalsGrid.addEventListener('click', (e) => { const button = e.target.closest('.details-btn'); if (button) { const { symbol, rationale } = button.dataset; uiManager.toggleModal(true, symbol, rationale); } }); },
+                startWebSocket() { 
+                    terminalManager.log('Canlı veri akışına bağlanılıyor...');
+                    const streams = config.coinList.map(s => `${s.toLowerCase()}@ticker`).join('/'); 
+                    if (state.webSocket) { state.webSocket.close(); }
+                    state.webSocket = new WebSocket(`wss://stream.binance.com:9443/ws/${streams}`); 
+                    state.webSocket.onopen = () => { uiManager.setConnectionStatus(true); terminalManager.log('Canlı veri akışı aktif!', 'success'); }; 
+                    state.webSocket.onmessage = (event) => { 
+                        const data = JSON.parse(event.data); 
+                        if (data.e === '24hrTicker') { 
+                            if(state.coinsData[data.s]) { 
+                                state.coinsData[data.s].c = data.c; 
+                                state.coinsData[data.s].P = data.P; 
+                                state.coinsData[data.s].q = data.q; 
+                            } 
+                            uiManager.updateLivePrice(data); 
+                            this.checkActiveSignals(data.s, parseFloat(data.c)); 
+                        } 
+                    }; 
+                    state.webSocket.onclose = () => { uiManager.setConnectionStatus(false); terminalManager.log('Canlı veri bağlantısı kesildi. 5 saniye içinde yeniden denenecek...', 'error'); setTimeout(() => this.startWebSocket(), 5000); }; 
+                    state.webSocket.onerror = (error) => { console.error("WebSocket Hatası:", error); uiManager.setConnectionStatus(false); state.webSocket.close(); }; 
+                },
+                checkActiveSignals(symbol, price) { const signal = state.activeSignals[symbol]; if (signal && signal.status === 'active') { if (price >= signal.targets.tp2) { terminalManager.log(`${symbol} tüm hedeflere ulaştı! (TP2)`, 'success'); uiManager.updateSignalStatus(symbol, 'successful'); } else if (price >= signal.targets.tp1) { const statusBox = document.getElementById(`status-box-${signal.id}`); if(statusBox && !statusBox.innerText.includes("TP1 BAŞARILI")) { terminalManager.log(`${symbol} hedef 1'e ulaştı! (TP1)`, 'success'); statusBox.innerHTML = `<p class="text-sm font-medium text-cyan-300">TP1 BAŞARILI</p><p class="text-xs text-gray-400">TP2 bekleniyor</p>`; } } else if (price <= signal.stopLoss) { terminalManager.log(`${symbol} stop oldu.`, 'error'); uiManager.updateSignalStatus(symbol, 'stopped'); } } },
+                async scanLoop() {
+                    if (state.currentScanIndex === 0 || state.currentScanIndex >= state.priorityList.length) {
+                        if (state.currentScanIndex >= state.priorityList.length) {
+                            terminalManager.log('Öncelik listesi taraması tamamlandı. Liste güncelleniyor.');
+                        }
+                        state.currentScanIndex = 0;
+                        this.updatePriorityList();
+                        
+                        if (state.priorityList.length === 0) {
+                            terminalManager.log('Analiz edilecek öncelikli coin bulunamadı. Tekrar denenecek.', 'error');
+                            setTimeout(() => this.scanLoop(), config.scanInterval * 2);
+                            return;
+                        }
+                    }
+                    
+                    terminalManager.updateProgress(state.currentScanIndex + 1, state.priorityList.length);
+
+                    const symbol = state.priorityList[state.currentScanIndex];
+                    const coinToScan = state.coinsData[symbol];
+
+                    if (!coinToScan) {
+                        console.error(`Öncelik listesindeki ${symbol} için veri bulunamadı.`);
+                        state.currentScanIndex++;
+                        setTimeout(() => this.scanLoop(), 1000);
+                        return;
+                    }
+
+                    if (!state.activeSignals[symbol]) {
+                        uiManager.setScanStatus(symbol, "Analiz ediliyor...");
+                        terminalManager.log(`${symbol} analiz ediliyor...`, 'scan');
+                        
+                        const btcKlines = await apiManager.getKlines('BTCUSDT', '4h');
+                        const btcIndicators = indicatorCalculator.calculateAll('BTCUSDT', btcKlines);
+                        
+                        if (btcIndicators) {
+                            const klines = {
+                                m15: await apiManager.getKlines(symbol, '15m'),
+                                h1: await apiManager.getKlines(symbol, '1h'),
+                                h4: await apiManager.getKlines(symbol, '4h'),
+                                d1: await apiManager.getKlines(symbol, '1d'),
+                            };
+                            const indicators = {
+                                m15: indicatorCalculator.calculateAll(symbol, klines.m15),
+                                h1: indicatorCalculator.calculateAll(symbol, klines.h1),
+                                h4: indicatorCalculator.calculateAll(symbol, klines.h4),
+                                d1: indicatorCalculator.calculateAll(symbol, klines.d1),
+                            };
+                            if (Object.values(indicators).every(d => d !== null)) {
+                                const analysisData = {
+                                    indicators: indicators,
+                                    btc: {
+                                        rsi: btcIndicators.rsi,
+                                        trend: btcIndicators.macd.histogram > 0 ? 'Yükseliş' : 'Düşüş'
+                                    }
+                                };
+                                const analysisResult = await aiCore.analyzeCoin(symbol, coinToScan.c, analysisData);
+                                if (analysisResult && analysisResult.shouldSignal && analysisResult.confidenceScore >= 7) {
+                                    uiManager.createSignalCard(symbol, analysisResult, coinToScan.c);
+                                    terminalManager.log(`${symbol} için yeni sinyal bulundu!`, 'success');
+                                }
+                            }
+                        }
+                    }
+                    uiManager.setScanStatus(symbol, "");
+                    state.currentScanIndex++;
+                    setTimeout(() => this.scanLoop(), config.scanInterval);
+                },
+            };
+            
+            App.init();
+        });
     </script>
 </body>
 </html>
